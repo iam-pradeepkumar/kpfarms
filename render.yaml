@@ -17,19 +17,19 @@ services:
       - key: NODE_ENV
         value: production
 
-      # ---- Public/Secret Supabase credentials to supply in Render Dashboard ----
+      # ---- Public Supabase credentials (new self-hosted project) ----
       - key: VITE_SUPABASE_URL
-        sync: false
+        value: https://ntkinaddmoefuhkxpzid.supabase.co
       - key: SUPABASE_URL
-        sync: false
+        value: https://ntkinaddmoefuhkxpzid.supabase.co
       - key: VITE_SUPABASE_PROJECT_ID
-        sync: false
+        value: ntkinaddmoefuhkxpzid
       - key: SUPABASE_PROJECT_ID
-        sync: false
+        value: ntkinaddmoefuhkxpzid
       - key: VITE_SUPABASE_PUBLISHABLE_KEY
-        sync: false
+        value: sb_publishable_aGL6hwcIg2ODNZc66FmJVA_KypN1h7n
       - key: SUPABASE_PUBLISHABLE_KEY
-        sync: false
+        value: sb_publishable_aGL6hwcIg2ODNZc66FmJVA_KypN1h7n
 
       # ---- Secrets: paste the values in the Render dashboard ----
       - key: SUPABASE_SERVICE_ROLE_KEY
