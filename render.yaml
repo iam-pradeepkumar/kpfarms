@@ -17,19 +17,19 @@ services:
       - key: NODE_ENV
         value: production
 
-      # ---- Public (safe to commit) ----
+      # ---- Public/Secret Supabase credentials to supply in Render Dashboard ----
       - key: VITE_SUPABASE_URL
-        value: https://hrrssfjnsvlvyieamiyg.supabase.co
+        sync: false
       - key: SUPABASE_URL
-        value: https://hrrssfjnsvlvyieamiyg.supabase.co
+        sync: false
       - key: VITE_SUPABASE_PROJECT_ID
-        value: hrrssfjnsvlvyieamiyg
+        sync: false
       - key: SUPABASE_PROJECT_ID
-        value: hrrssfjnsvlvyieamiyg
+        sync: false
       - key: VITE_SUPABASE_PUBLISHABLE_KEY
-        value: sb_publishable_ehe3AIKKFvyMJntRJFa3QQ_yPfOo_B_
+        sync: false
       - key: SUPABASE_PUBLISHABLE_KEY
-        value: sb_publishable_ehe3AIKKFvyMJntRJFa3QQ_yPfOo_B_
+        sync: false
 
       # ---- Secrets: paste the values in the Render dashboard ----
       - key: SUPABASE_SERVICE_ROLE_KEY
