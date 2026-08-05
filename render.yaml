@@ -1,0 +1,50 @@
+services:
+  - type: web
+    name: kp-farm-ventures
+    runtime: node
+    plan: starter
+    region: singapore
+    buildCommand: npm install && npm run build
+    startCommand: node .output/server/index.mjs
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      # Build target: produces a plain Node server in .output/server/index.mjs
+      - key: NITRO_PRESET
+        value: node-server
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+
+      # ---- Public (safe to commit) ----
+      - key: VITE_SUPABASE_URL
+        value: https://hrrssfjnsvlvyieamiyg.supabase.co
+      - key: SUPABASE_URL
+        value: https://hrrssfjnsvlvyieamiyg.supabase.co
+      - key: VITE_SUPABASE_PROJECT_ID
+        value: hrrssfjnsvlvyieamiyg
+      - key: SUPABASE_PROJECT_ID
+        value: hrrssfjnsvlvyieamiyg
+      - key: VITE_SUPABASE_PUBLISHABLE_KEY
+        value: sb_publishable_ehe3AIKKFvyMJntRJFa3QQ_yPfOo_B_
+      - key: SUPABASE_PUBLISHABLE_KEY
+        value: sb_publishable_ehe3AIKKFvyMJntRJFa3QQ_yPfOo_B_
+
+      # ---- Secrets: paste the values in the Render dashboard ----
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: LOVABLE_API_KEY
+        sync: false
+      - key: GOOGLE_CALENDAR_APP_USER_CONNECTOR_CLIENT_API_KEY
+        sync: false
+      - key: APP_USER_CONNECTION_KEY_SECRET
+        sync: false
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        sync: false
+      - key: PUSH_CRON_SECRET
+        sync: false
