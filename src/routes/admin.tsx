@@ -2220,16 +2220,30 @@ function BookingActions({
   const customerEmail = String(row.email ?? "").trim();
 
   useEffect(() => {
-    if (!open || !proofPath) return;
+    if (!open) return;
     let cancelled = false;
-    (async () => {
-      const url = await resolvePaymentProofUrl(proofPath);
-      if (!cancelled) setProofUrl(url);
-    })();
+    if (proofPath) {
+      (async () => {
+        const url = await resolvePaymentProofUrl(proofPath);
+        if (!cancelled) setProofUrl(url);
+      })();
+    }
+    if (isOnlineMeeting && !row.meeting_link) {
+      (async () => {
+        const { data } = await supabase
+          .from("site_settings")
+          .select("value")
+          .eq("key", "default_meet_link")
+          .maybeSingle();
+        if (!cancelled && data?.value) {
+          setLink(data.value);
+        }
+      })();
+    }
     return () => {
       cancelled = true;
     };
-  }, [open, proofPath]);
+  }, [open, proofPath, isOnlineMeeting, row.meeting_link]);
 
   const confirmSlot = async () => {
     if (isOnlineMeeting && !time) {
@@ -2578,7 +2592,7 @@ function SettingsTab() {
 
         <AdminWhatsappCard />
         <PhoneAlertsCard />
-        <GoogleCalendarCard />
+        <GoogleMeetSettingsCard />
       </div>
     </div>
   );
@@ -2845,64 +2859,24 @@ function AdminWhatsappCard() {
   );
 }
 
-/* -------- Settings: Google Calendar -------- */
+/* -------- Settings: Google Meet Link -------- */
 
-function GoogleCalendarCard() {
-  const status = useServerFn(getCalendarStatus);
-  const myGoogle = useServerFn(getMyGoogleCalendar);
-  const startConnect = useServerFn(startGoogleCalendarConnect);
-  const disconnect = useServerFn(disconnectGoogleCalendar);
-
+function GoogleMeetSettingsCard() {
+  const [defaultLink, setDefaultLink] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [accounts, setAccounts] = useState<CalendarAccount[]>([]);
-  const [slot, setSlot] = useState<string>("");
-  const [selected, setSelected] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [signingIn, setSigningIn] = useState(false);
 
   const load = async () => {
     setLoading(true);
-    setSaved(false);
-    const list: CalendarAccount[] = [];
-    let firstError: string | null = null;
-
-    // The Google account this admin signed in with, right here in the dashboard.
-    try {
-      const mine = await myGoogle({});
-      if (mine.connected || mine.error) {
-        list.push({
-          slot: "me",
-          account: mine.account || "My Google account",
-          calendars: mine.calendars ?? [],
-          error: mine.error ?? null,
-        });
-      }
-    } catch (e) {
-      firstError = e instanceof Error ? e.message : "Could not check Google sign-in.";
-    }
-
-    // Accounts connected at project level (kept so old set-ups keep working).
-    try {
-      const res = await status({});
-      for (const a of res.accounts ?? []) list.push(a);
-      if (!firstError) firstError = res.error ?? null;
-    } catch (e) {
-      if (!firstError)
-        firstError = e instanceof Error ? e.message : "Could not check Google Calendar.";
-    }
-
-    setAccounts(list);
-    setError(list.some((a) => !a.error) ? null : firstError);
-
     const { data } = await supabase
       .from("site_settings")
-      .select("key,value")
-      .in("key", [GOOGLE_CALENDAR_SETTING_KEY, GOOGLE_CALENDAR_SLOT_KEY]);
-    const rows = (data as { key: string; value: string }[] | null) ?? [];
-    setSelected(rows.find((r) => r.key === GOOGLE_CALENDAR_SETTING_KEY)?.value ?? "");
-    setSlot(rows.find((r) => r.key === GOOGLE_CALENDAR_SLOT_KEY)?.value ?? "");
+      .select("value")
+      .eq("key", "default_meet_link")
+      .maybeSingle();
+    if (data?.value) {
+      setDefaultLink(data.value);
+    }
     setLoading(false);
   };
 
@@ -2910,11 +2884,11 @@ function GoogleCalendarCard() {
     load();
   }, []);
 
-  const saveSetting = async (key: string, value: string) => {
+  const saveSetting = async () => {
     setSaving(true);
     const { error: err } = await supabase
       .from("site_settings")
-      .upsert({ key, value }, { onConflict: "key" });
+      .upsert({ key: "default_meet_link", value: defaultLink.trim() }, { onConflict: "key" });
     setSaving(false);
     if (err) alert(err.message);
     else {
@@ -2923,189 +2897,61 @@ function GoogleCalendarCard() {
     }
   };
 
-  const signIn = async () => {
-    setSigningIn(true);
-    try {
-      await runGoogleSignIn(
-        async () =>
-          (await startConnect({ data: { origin: window.location.origin } })).authorizationUrl,
-      );
-
-      setSlot("me");
-      setSelected("");
-      await saveSetting(GOOGLE_CALENDAR_SLOT_KEY, "me");
-      await saveSetting(GOOGLE_CALENDAR_SETTING_KEY, "");
-      await load();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Google sign-in failed.");
-    }
-    setSigningIn(false);
-  };
-
-  const signOut = async () => {
-    if (!confirm("Remove this Google account from the dashboard?")) return;
-    setSigningIn(true);
-    try {
-      await disconnect({});
-      if (slot === "me") {
-        setSlot("");
-        await saveSetting(GOOGLE_CALENDAR_SLOT_KEY, "");
-      }
-      await load();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Could not remove the account.");
-    }
-    setSigningIn(false);
-  };
-
-  const mine = accounts.find((a) => a.slot === "me");
-  const activeSlot = accounts.find((a) => a.slot === slot) ?? accounts.find((a) => !a.error);
-  const calendars = activeSlot?.calendars ?? [];
-  const connected = accounts.some((a) => !a.error);
-
   return (
     <div className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="font-display text-lg font-extrabold">Google Calendar</h2>
-        <span
-          className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest ${
-            connected
-              ? "border-emerald-200 bg-kp-green/10 text-kp-green"
-              : "border-stone-200 bg-stone-100 text-stone-500"
-          }`}
-        >
-          {loading ? "Checking" : connected ? "Connected" : "Not connected"}
+        <h2 className="font-display text-lg font-extrabold">Google Meet Link</h2>
+        <span className="rounded-full border border-emerald-200 bg-kp-green/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-kp-green">
+          Direct Connect
         </span>
       </div>
       <p className="mb-4 mt-1 text-xs text-stone-500">
-        Sign in with the Google account that should host the meetings. The meeting link is created
-        on that calendar and the invite is e-mailed to the customer.
+        Set a default Google Meet link to automatically attach to online consultation bookings, or paste/edit a custom meeting link when confirming any booking.
       </p>
 
       {loading ? (
-        <div className="flex justify-center py-10">
+        <div className="flex justify-center py-6">
           <Loader2 className="size-6 animate-spin text-kp-green" />
         </div>
       ) : (
-        <>
-          <div className="mb-4 rounded-2xl border border-stone-200 bg-stone-50 p-4">
-            {connected ? (
-              <>
-                <div className="text-[11px] font-bold uppercase tracking-widest text-kp-green">
-                  Google Calendar Connected
-                </div>
-                <div className="mt-1 break-all text-sm font-bold text-stone-800">
-                  {mine?.account || activeSlot?.account || "Connected Google Account"}
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    onClick={signIn}
-                    disabled={signingIn}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-4 py-2 text-xs font-bold uppercase tracking-widest text-stone-700 hover:border-kp-green hover:text-kp-green disabled:opacity-60"
-                  >
-                    {signingIn && <Loader2 className="size-3.5 animate-spin" />} Re-connect /
-                    Replace
-                  </button>
-                  <button
-                    onClick={signOut}
-                    disabled={signingIn}
-                    className="rounded-full border border-stone-200 bg-white px-4 py-2 text-xs font-bold uppercase tracking-widest text-stone-700 hover:border-kp-red hover:text-kp-red disabled:opacity-60"
-                  >
-                    Disconnect
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="text-sm font-bold text-stone-800">Connect Google Calendar</div>
-                <p className="mt-1 text-xs text-stone-500">
-                  {error ??
-                    "Connect your Google account once to enable automatic Google Meet link creation for online meeting bookings."}
-                </p>
-                <button
-                  onClick={signIn}
-                  disabled={signingIn}
-                  className="mt-3 inline-flex items-center gap-2 rounded-full bg-kp-green px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white disabled:opacity-60"
-                >
-                  {signingIn && <Loader2 className="size-3.5 animate-spin" />} Connect Google
-                  Calendar
-                </button>
-              </>
-            )}
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-stone-600">
+              Default Google Meet Room Link
+            </label>
+            <input
+              type="url"
+              placeholder="e.g. https://meet.google.com/xyz-abc-def"
+              value={defaultLink}
+              onChange={(e) => setDefaultLink(e.target.value)}
+              className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm focus:border-kp-green focus:bg-white focus:outline-none"
+            />
+            <p className="mt-1 text-[11px] text-stone-400">
+              This link will auto-fill whenever you open an online consultation booking to confirm it.
+            </p>
           </div>
 
-          {connected ? (
-            <>
-              <AdminLabel>Google account used for meetings</AdminLabel>
-              <select
-                value={activeSlot?.slot ?? ""}
-                onChange={(e) => {
-                  setSlot(e.target.value);
-                  setSelected("");
-                  void saveSetting(GOOGLE_CALENDAR_SLOT_KEY, e.target.value);
-                  void saveSetting(GOOGLE_CALENDAR_SETTING_KEY, "");
-                }}
-                className="mb-4 w-full min-w-0 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm"
-              >
-                {accounts.map((a) => (
-                  <option key={a.slot} value={a.slot} disabled={Boolean(a.error)}>
-                    {a.slot === "me"
-                      ? `${a.account} (signed in here)`
-                      : a.account || `Google account ${a.slot}`}
-                    {a.error ? " (needs sign-in again)" : ""}
-                  </option>
-                ))}
-              </select>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={saveSetting}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-full bg-kp-green px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white hover:bg-kp-green/90 disabled:opacity-60"
+            >
+              {saving && <Loader2 className="size-3.5 animate-spin" />}
+              {saved ? "Saved!" : "Save Default Link"}
+            </button>
 
-              <AdminLabel>Calendar used for meetings</AdminLabel>
-              <select
-                value={selected}
-                onChange={(e) => {
-                  setSelected(e.target.value);
-                  void saveSetting(GOOGLE_CALENDAR_SETTING_KEY, e.target.value);
-                }}
-                className="w-full min-w-0 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm"
-              >
-                <option value="">Main calendar of this account</option>
-                {calendars.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.summary}
-                    {c.primary ? " (main)" : ""}
-                  </option>
-                ))}
-              </select>
-              <div className="mt-2 min-h-[18px] text-[11px] font-semibold text-kp-green">
-                {saving ? "Saving…" : saved ? "Saved" : ""}
-              </div>
-            </>
-          ) : (
-            <div className="rounded-xl border border-dashed border-stone-300 p-5 text-sm text-stone-600">
-              <p className="font-semibold text-stone-800">No Google account connected yet.</p>
-              <p className="mt-1 text-xs">
-                {error ??
-                  "Use the Sign in with Google button above to create meeting links automatically."}
-              </p>
-            </div>
-          )}
-        </>
+            <a
+              href="https://meet.google.com/new"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-stone-700 hover:border-kp-green hover:text-kp-green"
+            >
+              <ExternalLink size={13} /> Create Instant Meet Room
+            </a>
+          </div>
+        </div>
       )}
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button
-          onClick={load}
-          className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-4 py-2 text-xs font-bold uppercase tracking-widest text-stone-700 hover:border-kp-green hover:text-kp-green"
-        >
-          <RefreshCw size={12} /> Check again
-        </button>
-        <a
-          href="https://calendar.google.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-4 py-2 text-xs font-bold uppercase tracking-widest text-stone-700 hover:border-kp-green hover:text-kp-green"
-        >
-          Open Google Calendar
-        </a>
-      </div>
     </div>
   );
 }
