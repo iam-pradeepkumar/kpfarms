@@ -22,7 +22,10 @@ function requireEnv(name: string): string {
 }
 
 export function googleClientId(): string {
-  return requireEnv("GOOGLE_CLIENT_ID");
+  return (
+    process.env["GOOGLE_CLIENT_ID"] ||
+    "583596411664-jtaibdgh0cu1lnn9v9ek565lb4bp0ujh.apps.googleusercontent.com"
+  );
 }
 function googleClientSecret(): string {
   return requireEnv("GOOGLE_CLIENT_SECRET");
