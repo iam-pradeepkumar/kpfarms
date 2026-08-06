@@ -12,6 +12,7 @@ import { PostCard, PostModal } from "@/routes/blog";
 import { supabase } from "@/integrations/supabase/client";
 import type { TestimonialRow } from "@/lib/submissions";
 import { getHomeVideoUrls, isVideoMediaUrl, type HomeVideoKey } from "@/lib/home-videos";
+import { getPublicSiteSettings } from "@/lib/settings.functions";
 
 import founderFamily from "@/assets/founder-family.jpg.asset.json";
 import founderFormal from "@/assets/founder-formal.png.asset.json";
@@ -100,19 +101,21 @@ function Index() {
               const rows = (data as any) ?? [];
               setTestimonials(rows.length ? rows : FALLBACK_TESTIMONIALS);
             }).catch(() => {}),
-          supabase
-            .from("site_settings")
-            .select("key, value")
-            .in("key", ["stat_consultations", "stat_farm_visits", "stat_training", "stat_chicken_production", "stat_batch_counts"])
-            .then(({ data }) => {
-              data?.forEach((row) => {
-                if (row.key === "stat_consultations" && row.value) setConsultCount(Number(row.value) || 507);
-                if (row.key === "stat_farm_visits" && row.value) setVisitCount(Number(row.value) || 203);
-                if (row.key === "stat_training" && row.value) setTrainingCount(Number(row.value) || 150);
-                if (row.key === "stat_chicken_production" && row.value) setChickenProdCount(Number(row.value) || 10000);
-                if (row.key === "stat_batch_counts" && row.value) setBatchRunCount(Number(row.value) || 50);
-              });
-            }).catch(() => {})
+          getPublicSiteSettings([
+            "stat_consultations",
+            "stat_farm_visits",
+            "stat_training",
+            "stat_chicken_production",
+            "stat_batch_counts"
+          ]).then((data) => {
+            data?.forEach((row) => {
+              if (row.key === "stat_consultations" && row.value) setConsultCount(Number(row.value) || 507);
+              if (row.key === "stat_farm_visits" && row.value) setVisitCount(Number(row.value) || 203);
+              if (row.key === "stat_training" && row.value) setTrainingCount(Number(row.value) || 150);
+              if (row.key === "stat_chicken_production" && row.value) setChickenProdCount(Number(row.value) || 10000);
+              if (row.key === "stat_batch_counts" && row.value) setBatchRunCount(Number(row.value) || 50);
+            });
+          }).catch(() => {})
         ]);
 
         const animate = (base: number, extra: number, setter: (n: number) => void) => {

@@ -46,6 +46,8 @@ function SocialDot({
   );
 }
 
+import { getPublicSiteSettings } from "@/lib/settings.functions";
+
 export function SiteFooter() {
   const { display: waDisplay, waLink } = useAdminWhatsapp();
   const [footerEmail, setFooterEmail] = useState("hello@kpfarmventures.in");
@@ -53,10 +55,7 @@ export function SiteFooter() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("site_settings")
-        .select("key, value")
-        .in("key", ["footer_email", "footer_address"]);
+      const data = await getPublicSiteSettings(["footer_email", "footer_address"]);
       if (data?.length) {
         data.forEach((r) => {
           if (r.key === "footer_email" && r.value) setFooterEmail(r.value);

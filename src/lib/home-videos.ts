@@ -40,10 +40,12 @@ async function signed(path: string | null): Promise<string | null> {
   return data?.signedUrl ?? null;
 }
 
+import { getPublicSiteSettings } from "./settings.functions";
+
 /** Returns a map of video key -> playable URL (null when not uploaded). */
 export async function getHomeVideoUrls(): Promise<Partial<Record<HomeVideoKey, string>>> {
   const keys = HOME_VIDEOS.map((v) => v.key);
-  const { data } = await supabase.from("site_settings").select("key, value").in("key", keys);
+  const data = await getPublicSiteSettings(keys);
   const out: Partial<Record<HomeVideoKey, string>> = {};
   for (const row of data ?? []) {
     const url = await signed((row as { value: string | null }).value);

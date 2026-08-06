@@ -336,18 +336,15 @@ export async function resolvePaymentProofUrl(path: string | null): Promise<strin
   return data?.signedUrl ?? null;
 }
 
-/* ---------------- Admin WhatsApp number ---------------- */
+import { getPublicSiteSettings } from "./settings.functions";
 
 export const ADMIN_WHATSAPP_KEY = "admin_whatsapp";
 
 /** Digits-only WhatsApp number of the admin, e.g. "919876543210". */
 export async function getAdminWhatsapp(): Promise<string | null> {
-  const { data } = await supabase
-    .from("site_settings")
-    .select("value")
-    .eq("key", ADMIN_WHATSAPP_KEY)
-    .maybeSingle();
-  const num = toWaDigits(data?.value ?? "");
+  const data = await getPublicSiteSettings([ADMIN_WHATSAPP_KEY]);
+  const row = data?.[0];
+  const num = toWaDigits(row?.value ?? "");
   return num || null;
 }
 
