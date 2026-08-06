@@ -61,15 +61,12 @@ export async function uploadHomeVideo(key: HomeVideoKey, file: File): Promise<vo
     .from(BUCKET)
     .upload(path, file, { contentType: file.type || undefined, upsert: true });
   if (upErr) throw upErr;
-  const { error } = await supabase
-    .from("site_settings")
-    .upsert({ key, value: path }, { onConflict: "key" });
-  if (error) throw error;
+  
+  // Use the server function to bypass client-side RLS constraints
+  await saveAdminSiteSettings({ [key]: path });
 }
 
 export async function removeHomeVideo(key: HomeVideoKey): Promise<void> {
-  const { error } = await supabase
-    .from("site_settings")
-    .upsert({ key, value: null }, { onConflict: "key" });
-  if (error) throw error;
+  // Use the server function to bypass client-side RLS constraints
+  await saveAdminSiteSettings({ [key]: null });
 }

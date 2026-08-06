@@ -15,10 +15,39 @@ export const getPublicSiteSettings = createServerFn({ method: "POST" })
 
 /** Save site settings from the dashboard on the server */
 export const saveAdminSiteSettings = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .validator((settings: Record<string, string | null>) => settings)
   .handler(async ({ data: settings }) => {
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const { createClient } = await import("@supabase/supabase-js");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Authenticate user manually on server to avoid middleware header issues
+    const request = getRequest();
+    const authHeader = request?.headers?.get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      throw new Error("Unauthorized: Invalid authorization header");
+    }
+    const token = authHeader.replace("Bearer ", "");
+    
+    // Resolve user details using token
+    const client = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!);
+    const { data: { user }, error: authError } = await client.auth.getUser(token);
+    if (authError || !user) {
+      throw new Error("Unauthorized: Invalid session");
+    }
+
+    // Verify admin role in user_roles table
+    const { data: roleRow, error: roleError } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (roleError || !roleRow) {
+      throw new Error("Unauthorized: Admin privilege required");
+    }
+
     const updates = Object.entries(settings).map(([key, value]) =>
       supabaseAdmin.from("site_settings").upsert({ key, value }, { onConflict: "key" })
     );
