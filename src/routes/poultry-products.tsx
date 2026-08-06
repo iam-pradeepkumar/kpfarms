@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { PageShell, PageHero } from "@/components/site/page-shell";
 import { OrderModal, type OrderItem } from "@/components/site/order-modal";
-import { ExternalLink, Loader2 } from "lucide-react";
+import { ProductDetailModal, type ProductDetail } from "@/components/site/product-detail-modal";
+import { ExternalLink, Loader2, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/poultry-products")({
@@ -46,6 +47,7 @@ async function resolveImage(path: string | null): Promise<string | null> {
 function PoultryProducts() {
   const [tab, setTab] = useState<"affiliate" | "own">("affiliate");
   const [order, setOrder] = useState<OrderItem | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductDetail | null>(null);
   const [rows, setRows] = useState<(Product & { _img: string | null })[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -71,13 +73,23 @@ function PoultryProducts() {
   const affiliate = useMemo(() => rows.filter((r) => r.type === "affiliate"), [rows]);
   const own = useMemo(() => rows.filter((r) => r.type === "poultry"), [rows]);
 
+  const openOrder = (p: { id: string; name: string; price?: number | null; offer_price?: number | null; category?: string | null; _img?: string | null; image_url?: string | null }) => {
+    setOrder({
+      id: p.id,
+      title: p.name,
+      price: p.offer_price ?? p.price ?? 0,
+      tag: p.category ?? "Farm",
+      image_url: p._img ?? p.image_url ?? null,
+    });
+  };
+
   return (
     <PageShell>
       <PageHero
         eyebrow="Farm Products"
         title="Trusted gear from"
         accent="Amazon and our own farm"
-        desc="One place for the equipment we use on our farm, plus safe Amazon links for other trusted brands."
+        desc="One place for the equipment we use on our farm, plus safe Amazon links for other trusted brands. Click any product to view details."
       />
 
       <section className="px-6 pb-24 md:px-10">
@@ -113,18 +125,69 @@ function PoultryProducts() {
                 {affiliate.map((p) => (
                   <article
                     key={p.id}
-                    className="group overflow-hidden rounded-3xl border border-stone-200 bg-white transition hover:-translate-y-1 hover:shadow-xl"
+                    className="group overflow-hidden rounded-3xl border border-stone-200 bg-white transition hover:-translate-y-1 hover:shadow-xl flex flex-col"
                   >
-                    <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-amber-100 via-orange-50 to-red-50">
+                    <div
+                      onClick={() =>
+                        setSelectedProduct({
+                          id: p.id,
+                          name: p.name,
+                          price: p.price,
+                          offer_price: p.offer_price,
+                          category: "Amazon Pick",
+                          image_url: p._img,
+                          description: p.description,
+                        })
+                      }
+                      className="relative aspect-[4/3] cursor-pointer overflow-hidden bg-gradient-to-br from-amber-100 via-orange-50 to-red-50 flex items-center justify-center"
+                    >
                       {p._img && (
-                        <img src={p._img} alt={p.name} className="h-full w-full object-cover" />
+                        <img src={p._img} alt={p.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                       )}
+                      <div className="absolute inset-0 flex items-center justify-center bg-stone-900/20 opacity-0 transition-opacity group-hover:opacity-100">
+                        <span className="flex items-center gap-1.5 rounded-full bg-white/90 px-4 py-2 text-xs font-bold text-stone-900 shadow-md backdrop-blur-sm">
+                          <Eye size={14} /> View Details
+                        </span>
+                      </div>
                     </div>
-                    <div className="p-6">
+                    <div className="p-6 flex flex-1 flex-col">
                       <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-kp-gold">
                         Amazon Pick
                       </div>
-                      <h3 className="mb-3 font-display text-lg font-bold">{p.name}</h3>
+                      <h3
+                        onClick={() =>
+                          setSelectedProduct({
+                            id: p.id,
+                            name: p.name,
+                            price: p.price,
+                            offer_price: p.offer_price,
+                            category: "Amazon Pick",
+                            image_url: p._img,
+                            description: p.description,
+                          })
+                        }
+                        className="mb-2 cursor-pointer font-display text-lg font-bold hover:text-kp-green"
+                      >
+                        {p.name}
+                      </h3>
+                      {p.description && (
+                        <p
+                          onClick={() =>
+                            setSelectedProduct({
+                              id: p.id,
+                              name: p.name,
+                              price: p.price,
+                              offer_price: p.offer_price,
+                              category: "Amazon Pick",
+                              image_url: p._img,
+                              description: p.description,
+                            })
+                          }
+                          className="mb-4 cursor-pointer text-xs leading-relaxed text-stone-500 line-clamp-2 hover:text-stone-700"
+                        >
+                          {p.description}
+                        </p>
+                      )}
                       {(p.offer_price != null || p.price != null) && (
                         <div className="mb-4 flex items-baseline gap-2">
                           <span className="font-display text-2xl font-extrabold text-kp-red">
@@ -139,14 +202,32 @@ function PoultryProducts() {
                             )}
                         </div>
                       )}
-                      <a
-                        href={p.external_url || "https://amazon.in"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#FF9900] py-2.5 text-sm font-bold text-stone-900 transition hover:brightness-95"
-                      >
-                        Buy from Amazon <ExternalLink size={14} />
-                      </a>
+                      <div className="mt-auto flex gap-2">
+                        <button
+                          onClick={() =>
+                            setSelectedProduct({
+                              id: p.id,
+                              name: p.name,
+                              price: p.price,
+                              offer_price: p.offer_price,
+                              category: "Amazon Pick",
+                              image_url: p._img,
+                              description: p.description,
+                            })
+                          }
+                          className="flex-1 rounded-xl border border-stone-200 bg-stone-50 py-2.5 text-xs font-bold text-stone-700 hover:bg-stone-100"
+                        >
+                          Details
+                        </button>
+                        <a
+                          href={p.external_url || "https://amazon.in"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#FF9900] py-2.5 text-xs font-bold text-stone-900 transition hover:brightness-95"
+                        >
+                          Amazon <ExternalLink size={13} />
+                        </a>
+                      </div>
                     </div>
                   </article>
                 ))}
@@ -159,38 +240,113 @@ function PoultryProducts() {
               {own.map((p) => (
                 <article
                   key={p.id}
-                  className="group overflow-hidden rounded-3xl border border-stone-200 bg-white transition hover:-translate-y-1 hover:shadow-xl"
+                  className="group overflow-hidden rounded-3xl border border-stone-200 bg-white transition hover:-translate-y-1 hover:shadow-xl flex flex-col"
                 >
-                  <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-kp-green/10 via-emerald-50 to-lime-50">
+                  <div
+                    onClick={() =>
+                      setSelectedProduct({
+                        id: p.id,
+                        name: p.name,
+                        price: p.price,
+                        offer_price: p.offer_price,
+                        category: p.category,
+                        image_url: p._img,
+                        description: p.description,
+                      })
+                    }
+                    className="relative aspect-[4/3] cursor-pointer overflow-hidden bg-gradient-to-br from-kp-green/10 via-emerald-50 to-lime-50 flex items-center justify-center"
+                  >
                     {p._img ? (
-                      <img src={p._img} alt={p.name} className="h-full w-full object-cover" />
+                      <img src={p._img} alt={p.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                     ) : (
                       <div className="flex h-full items-center justify-center font-display text-4xl font-extrabold text-kp-green">
                         {p.name[0]}
                       </div>
                     )}
+                    <div className="absolute inset-0 flex items-center justify-center bg-stone-900/20 opacity-0 transition-opacity group-hover:opacity-100">
+                      <span className="flex items-center gap-1.5 rounded-full bg-white/90 px-4 py-2 text-xs font-bold text-stone-900 shadow-md backdrop-blur-sm">
+                        <Eye size={14} /> View Details
+                      </span>
+                    </div>
                   </div>
-                  <div className="p-6">
+                  <div className="p-6 flex flex-1 flex-col">
                     {p.category && (
                       <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-kp-green">
                         {p.category}
                       </div>
                     )}
-                    <h3 className="mb-3 font-display text-lg font-bold">{p.name}</h3>
-                    {p.description && <ExpandableDescription text={p.description} />}
-                    <button
+                    <h3
                       onClick={() =>
-                        setOrder({
+                        setSelectedProduct({
                           id: p.id,
-                          title: p.name,
-                          price: p.offer_price ?? p.price ?? 0,
-                          tag: p.category ?? "Farm",
+                          name: p.name,
+                          price: p.price,
+                          offer_price: p.offer_price,
+                          category: p.category,
+                          image_url: p._img,
+                          description: p.description,
                         })
                       }
-                      className="w-full rounded-xl bg-kp-green py-2.5 text-sm font-bold uppercase tracking-widest text-white hover:opacity-90"
+                      className="mb-2 cursor-pointer font-display text-lg font-bold hover:text-kp-green"
                     >
-                      Buy Now
-                    </button>
+                      {p.name}
+                    </h3>
+                    {p.description && (
+                      <p
+                        onClick={() =>
+                          setSelectedProduct({
+                            id: p.id,
+                            name: p.name,
+                            price: p.price,
+                            offer_price: p.offer_price,
+                            category: p.category,
+                            image_url: p._img,
+                            description: p.description,
+                          })
+                        }
+                        className="mb-4 cursor-pointer text-xs leading-relaxed text-stone-500 line-clamp-2 hover:text-stone-700"
+                      >
+                        {p.description}
+                      </p>
+                    )}
+                    {(p.offer_price != null || p.price != null) && (
+                      <div className="mb-4 flex items-baseline gap-2">
+                        <span className="font-display text-2xl font-extrabold text-kp-green">
+                          ₹{p.offer_price ?? p.price}
+                        </span>
+                        {p.price != null &&
+                          p.offer_price != null &&
+                          p.price !== p.offer_price && (
+                            <span className="text-sm text-stone-400 line-through">
+                              ₹{p.price}
+                            </span>
+                          )}
+                      </div>
+                    )}
+                    <div className="mt-auto flex gap-2">
+                      <button
+                        onClick={() =>
+                          setSelectedProduct({
+                            id: p.id,
+                            name: p.name,
+                            price: p.price,
+                            offer_price: p.offer_price,
+                            category: p.category,
+                            image_url: p._img,
+                            description: p.description,
+                          })
+                        }
+                        className="flex-1 rounded-xl border border-stone-200 bg-stone-50 py-2.5 text-xs font-bold text-stone-700 hover:bg-stone-100"
+                      >
+                        Details
+                      </button>
+                      <button
+                        onClick={() => openOrder(p)}
+                        className="flex-1 rounded-xl bg-kp-green py-2.5 text-xs font-bold uppercase tracking-widest text-white hover:opacity-90"
+                      >
+                        Buy Now
+                      </button>
+                    </div>
                   </div>
                 </article>
               ))}
@@ -198,32 +354,17 @@ function PoultryProducts() {
           )}
         </div>
       </section>
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onBuy={(prod) => openOrder(prod)}
+      />
+
+      {/* Multi-step Order Modal */}
       <OrderModal item={order} onClose={() => setOrder(null)} />
     </PageShell>
-  );
-}
-
-function ExpandableDescription({ text }: { text: string }) {
-  const [expanded, setExpanded] = useState(false);
-  const maxLen = 75;
-
-  if (text.length <= maxLen) {
-    return <p className="mb-3 text-sm leading-relaxed text-stone-500">{text}</p>;
-  }
-
-  return (
-    <div className="mb-3">
-      <p className="text-sm leading-relaxed text-stone-500">
-        {expanded ? text : `${text.slice(0, maxLen)}... `}
-        <button
-          type="button"
-          onClick={() => setExpanded(!expanded)}
-          className="ml-1 text-xs font-bold text-kp-green hover:underline focus:outline-none"
-        >
-          {expanded ? "read less" : "read more"}
-        </button>
-      </p>
-    </div>
   );
 }
 

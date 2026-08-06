@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { PageShell, PageHero } from "@/components/site/page-shell";
 import { OrderModal, type OrderItem } from "@/components/site/order-modal";
-import { Download, Loader2 } from "lucide-react";
+import { ProductDetailModal, type ProductDetail } from "@/components/site/product-detail-modal";
+import { Download, Loader2, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/digital-products")({
@@ -43,6 +44,7 @@ async function resolveImage(path: string | null): Promise<string | null> {
 
 function DigitalProducts() {
   const [order, setOrder] = useState<OrderItem | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductDetail | null>(null);
   const [products, setProducts] = useState<(Product & { _img: string | null })[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -63,13 +65,23 @@ function DigitalProducts() {
     })();
   }, []);
 
+  const openOrder = (p: { id: string; name: string; price?: number | null; offer_price?: number | null; category?: string | null; _img?: string | null; image_url?: string | null }) => {
+    setOrder({
+      id: p.id,
+      title: p.name,
+      price: p.offer_price ?? p.price ?? 0,
+      tag: p.category ?? "Digital",
+      image_url: p._img ?? p.image_url ?? null,
+    });
+  };
+
   return (
     <PageShell>
       <PageHero
         eyebrow="Digital Products"
         title="Ready-to-use tools for"
         accent="modern farm owners"
-        desc="Simple sheets, forms, and e-books that work well with your daily farm work. Sent on WhatsApp after we check your payment."
+        desc="Simple sheets, forms, and e-books that work well with your daily farm work. Click any product to view details or buy now."
       />
 
       <section className="px-6 py-16 md:px-10">
@@ -89,9 +101,23 @@ function DigitalProducts() {
                   key={p.id}
                   className="group flex flex-col overflow-hidden rounded-3xl border border-stone-200 bg-white transition hover:-translate-y-1 hover:shadow-xl"
                 >
-                  <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-gradient-to-br from-kp-gold/15 via-kp-green/10 to-kp-red/10">
+                  {/* Clickable Image -> Opens Details Modal */}
+                  <div
+                    onClick={() =>
+                      setSelectedProduct({
+                        id: p.id,
+                        name: p.name,
+                        price: p.price,
+                        offer_price: p.offer_price,
+                        category: p.category,
+                        image_url: p._img,
+                        description: p.description,
+                      })
+                    }
+                    className="relative flex aspect-[4/3] cursor-pointer items-center justify-center overflow-hidden bg-gradient-to-br from-kp-gold/15 via-kp-green/10 to-kp-red/10"
+                  >
                     {p._img ? (
-                      <img src={p._img} alt={p.name} className="h-full w-full object-cover" />
+                      <img src={p._img} alt={p.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                     ) : (
                       <div className="flex size-16 items-center justify-center rounded-2xl bg-white shadow-md">
                         <Download className="text-kp-green" />
@@ -102,10 +128,50 @@ function DigitalProducts() {
                         {p.category}
                       </span>
                     )}
+                    <div className="absolute inset-0 flex items-center justify-center bg-stone-900/20 opacity-0 transition-opacity group-hover:opacity-100">
+                      <span className="flex items-center gap-1.5 rounded-full bg-white/90 px-4 py-2 text-xs font-bold text-stone-900 shadow-md backdrop-blur-sm">
+                        <Eye size={14} /> View Details
+                      </span>
+                    </div>
                   </div>
+
                   <div className="flex flex-1 flex-col p-6">
-                    <h3 className="mb-2 font-display text-lg font-bold">{p.name}</h3>
-                    {p.description && <ExpandableDescription text={p.description} />}
+                    <h3
+                      onClick={() =>
+                        setSelectedProduct({
+                          id: p.id,
+                          name: p.name,
+                          price: p.price,
+                          offer_price: p.offer_price,
+                          category: p.category,
+                          image_url: p._img,
+                          description: p.description,
+                        })
+                      }
+                      className="mb-2 cursor-pointer font-display text-lg font-bold hover:text-kp-green"
+                    >
+                      {p.name}
+                    </h3>
+                    
+                    {p.description && (
+                      <p
+                        onClick={() =>
+                          setSelectedProduct({
+                            id: p.id,
+                            name: p.name,
+                            price: p.price,
+                            offer_price: p.offer_price,
+                            category: p.category,
+                            image_url: p._img,
+                            description: p.description,
+                          })
+                        }
+                        className="mb-4 cursor-pointer text-xs leading-relaxed text-stone-500 line-clamp-2 hover:text-stone-700"
+                      >
+                        {p.description}
+                      </p>
+                    )}
+
                     {(p.offer_price != null || p.price != null) && (
                       <div className="mb-4 flex items-baseline gap-2">
                         {p.offer_price != null && (
@@ -122,19 +188,31 @@ function DigitalProducts() {
                         ) : null}
                       </div>
                     )}
-                    <button
-                      onClick={() =>
-                        setOrder({
-                          id: p.id,
-                          title: p.name,
-                          price: p.offer_price ?? p.price ?? 0,
-                          tag: p.category ?? "Digital",
-                        })
-                      }
-                      className="mt-auto rounded-xl bg-kp-green py-2.5 text-xs font-bold uppercase tracking-widest text-white hover:opacity-90"
-                    >
-                      Buy Now
-                    </button>
+
+                    <div className="mt-auto flex gap-2">
+                      <button
+                        onClick={() =>
+                          setSelectedProduct({
+                            id: p.id,
+                            name: p.name,
+                            price: p.price,
+                            offer_price: p.offer_price,
+                            category: p.category,
+                            image_url: p._img,
+                            description: p.description,
+                          })
+                        }
+                        className="flex-1 rounded-xl border border-stone-200 bg-stone-50 py-2.5 text-xs font-bold text-stone-700 hover:bg-stone-100"
+                      >
+                        Details
+                      </button>
+                      <button
+                        onClick={() => openOrder(p)}
+                        className="flex-1 rounded-xl bg-kp-green py-2.5 text-xs font-bold uppercase tracking-widest text-white hover:opacity-90"
+                      >
+                        Buy Now
+                      </button>
+                    </div>
                   </div>
                 </article>
               ))}
@@ -142,31 +220,16 @@ function DigitalProducts() {
           )}
         </div>
       </section>
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
+        onBuy={(prod) => openOrder(prod)}
+      />
+
+      {/* Multi-step Order Modal */}
       <OrderModal item={order} onClose={() => setOrder(null)} />
     </PageShell>
-  );
-}
-
-function ExpandableDescription({ text }: { text: string }) {
-  const [expanded, setExpanded] = useState(false);
-  const maxLen = 75;
-
-  if (text.length <= maxLen) {
-    return <p className="mb-3 text-sm leading-relaxed text-stone-500">{text}</p>;
-  }
-
-  return (
-    <div className="mb-3">
-      <p className="text-sm leading-relaxed text-stone-500">
-        {expanded ? text : `${text.slice(0, maxLen)}... `}
-        <button
-          type="button"
-          onClick={() => setExpanded(!expanded)}
-          className="ml-1 text-xs font-bold text-kp-green hover:underline focus:outline-none"
-        >
-          {expanded ? "read less" : "read more"}
-        </button>
-      </p>
-    </div>
   );
 }
