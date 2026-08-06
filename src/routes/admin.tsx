@@ -2580,7 +2580,7 @@ function SettingsTab() {
         </div>
         <h1 className="font-display text-2xl font-extrabold sm:text-3xl md:text-4xl">Settings</h1>
         <p className="mt-2 max-w-xl text-sm text-stone-600">
-          Payment QR code and the Google Calendar used to create meeting links.
+          Payment QR code, footer contact info, and the Google Calendar used to create meeting links.
         </p>
       </div>
 
@@ -2622,6 +2622,7 @@ function SettingsTab() {
         </div>
 
         <AdminWhatsappCard />
+        <FooterContactCard />
         <PhoneAlertsCard />
         <GoogleCalendarSettingsCard />
       </div>
@@ -2887,6 +2888,87 @@ function HeroStatsEditorCard() {
           className="rounded-xl bg-kp-green px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-white hover:opacity-90 disabled:opacity-50"
         >
           {saving ? "Saving…" : "Save Counter Stats"}
+        </button>
+        {msg && <span className="text-xs font-semibold text-kp-green">{msg}</span>}
+      </div>
+    </div>
+  );
+}
+
+/* -------- Settings: footer contact info -------- */
+
+function FooterContactCard() {
+  const [contact, setContact] = useState({
+    footer_email: "hello@kpfarmventures.in",
+    footer_address: "Tamil Nadu, India",
+  });
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("key, value")
+        .in("key", ["footer_email", "footer_address"]);
+      if (data?.length) {
+        const map: Record<string, string> = {};
+        data.forEach((r) => { if (r.value) map[r.key] = r.value; });
+        setContact((prev) => ({ ...prev, ...map }));
+      }
+    })();
+  }, []);
+
+  const saveContact = async () => {
+    setSaving(true);
+    setMsg("");
+    try {
+      const updates = Object.entries(contact).map(([key, value]) =>
+        supabase.from("site_settings").upsert({ key, value }, { onConflict: "key" })
+      );
+      await Promise.all(updates);
+      setMsg("Contact info updated!");
+    } catch {
+      setMsg("Failed to update contact info.");
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
+      <h2 className="font-display text-lg font-extrabold">Footer Contact Info</h2>
+      <p className="mb-4 mt-1 text-xs text-stone-500">
+        Update the email and address shown in the footer's "Get in touch" section.
+      </p>
+      <div className="grid gap-4">
+        <label className="block">
+          <span className="text-xs font-bold uppercase tracking-widest text-stone-600">Email Address</span>
+          <input
+            type="email"
+            value={contact.footer_email}
+            onChange={(e) => setContact({ ...contact, footer_email: e.target.value })}
+            className="mt-1 w-full rounded-xl border border-stone-200 px-3.5 py-2 text-sm"
+            placeholder="hello@kpfarmventures.in"
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs font-bold uppercase tracking-widest text-stone-600">Location / Address</span>
+          <input
+            type="text"
+            value={contact.footer_address}
+            onChange={(e) => setContact({ ...contact, footer_address: e.target.value })}
+            className="mt-1 w-full rounded-xl border border-stone-200 px-3.5 py-2 text-sm"
+            placeholder="Tamil Nadu, India"
+          />
+        </label>
+      </div>
+      <div className="mt-5 flex items-center gap-4">
+        <button
+          onClick={saveContact}
+          disabled={saving}
+          className="rounded-xl bg-kp-green px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-white hover:opacity-90 disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save Contact Info"}
         </button>
         {msg && <span className="text-xs font-semibold text-kp-green">{msg}</span>}
       </div>

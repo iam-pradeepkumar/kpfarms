@@ -1,9 +1,10 @@
-import type { ComponentType } from "react";
+import { useState, useEffect, type ComponentType } from "react";
 import { Link } from "@tanstack/react-router";
 import { Facebook, Instagram, Youtube } from "lucide-react";
 import { KpMark } from "./kp-mark";
 import { useAdminWhatsapp } from "@/lib/site-contact";
 import { SOCIAL_LINKS } from "@/lib/social-links";
+import { supabase } from "@/integrations/supabase/client";
 
 function WhatsAppGlyph({ size = 18 }: { size?: number }) {
   return (
@@ -47,6 +48,24 @@ function SocialDot({
 
 export function SiteFooter() {
   const { display: waDisplay, waLink } = useAdminWhatsapp();
+  const [footerEmail, setFooterEmail] = useState("hello@kpfarmventures.in");
+  const [footerAddress, setFooterAddress] = useState("Tamil Nadu, India");
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("key, value")
+        .in("key", ["footer_email", "footer_address"]);
+      if (data?.length) {
+        data.forEach((r) => {
+          if (r.key === "footer_email" && r.value) setFooterEmail(r.value);
+          if (r.key === "footer_address" && r.value) setFooterAddress(r.value);
+        });
+      }
+    })();
+  }, []);
+
   return (
     <footer className="relative z-10 border-t border-stone-200 bg-white px-6 py-14 md:px-10">
       <div className="mx-auto max-w-7xl">
@@ -152,8 +171,8 @@ export function SiteFooter() {
             </div>
             <ul className="space-y-2 text-sm text-stone-500">
               <li>📞 {waDisplay || "—"}</li>
-              <li>✉️ hello@kpfarmventures.in</li>
-              <li>📍 Tamil Nadu, India</li>
+              <li>✉️ {footerEmail}</li>
+              <li>📍 {footerAddress}</li>
             </ul>
           </div>
         </div>

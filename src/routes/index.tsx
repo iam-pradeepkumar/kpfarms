@@ -174,6 +174,9 @@ function Index() {
           className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right"
         />
 
+        {/* Mobile readability gradient overlay */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/80 via-white/60 to-white/80 md:from-white/40 md:via-transparent md:to-white/30" />
+
 
         {/* Floating hero decor */}
         <Chick
@@ -214,7 +217,7 @@ function Index() {
               <br />
               Farm
             </h1>
-            <p className="mb-10 max-w-lg text-lg leading-relaxed text-stone-600">
+            <p className="mb-10 max-w-lg text-lg leading-relaxed text-stone-700">
               From online meeting to hands-on training and farm visits — KP Farm Ventures gives you
               a simple, clear plan to run a poultry farm that makes money.
             </p>
@@ -238,7 +241,7 @@ function Index() {
                 <div className="font-display text-xl sm:text-2xl font-extrabold text-kp-green">
                   {consultCount.toLocaleString("en-IN")}+
                 </div>
-                <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-stone-600">
+                <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-stone-800">
                   Online Consultations
                 </div>
               </div>
@@ -246,7 +249,7 @@ function Index() {
                 <div className="font-display text-xl sm:text-2xl font-extrabold text-kp-red">
                   {visitCount.toLocaleString("en-IN")}+
                 </div>
-                <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-stone-600">
+                <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-stone-800">
                   Farm Visits
                 </div>
               </div>
@@ -254,7 +257,7 @@ function Index() {
                 <div className="font-display text-xl sm:text-2xl font-extrabold text-kp-gold">
                   {trainingCount.toLocaleString("en-IN")}+
                 </div>
-                <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-stone-600">
+                <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-stone-800">
                   Training Programs
                 </div>
               </div>
@@ -262,7 +265,7 @@ function Index() {
                 <div className="font-display text-xl sm:text-2xl font-extrabold text-kp-green">
                   {chickenProdCount.toLocaleString("en-IN")}+
                 </div>
-                <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-stone-600">
+                <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-stone-800">
                   Total Chicken Production
                 </div>
               </div>
@@ -270,7 +273,7 @@ function Index() {
                 <div className="font-display text-xl sm:text-2xl font-extrabold text-kp-red">
                   {batchRunCount.toLocaleString("en-IN")}+
                 </div>
-                <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-stone-600">
+                <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-stone-800">
                   Successful Run Batches
                 </div>
               </div>
