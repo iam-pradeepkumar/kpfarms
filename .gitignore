@@ -33,3 +33,5 @@ dist-ssr
 
 # TS build cache
 tsconfig.tsbuildinfo
+.env.backup
+supabase/.temp/
