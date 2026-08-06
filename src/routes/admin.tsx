@@ -1,17 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { scheduleGoogleMeet, getCalendarStatus } from "@/lib/meetings.functions";
-import {
-  disconnectGoogleCalendar,
-  getMyGoogleCalendar,
-  startGoogleCalendarConnect,
-} from "@/lib/gcal.functions";
-import { runGoogleSignIn } from "@/lib/gcal-connect-client";
-import {
-  GOOGLE_CALENDAR_SETTING_KEY,
-  GOOGLE_CALENDAR_SLOT_KEY,
-  type CalendarAccount,
-} from "@/lib/calendar-settings";
+import { scheduleGoogleMeet } from "@/lib/meetings.functions";
 import { useEffect, useMemo, useState } from "react";
 
 import type { Session } from "@supabase/supabase-js";
@@ -26,6 +15,7 @@ import {
   Check,
   X,
   MessageCircle,
+  ExternalLink,
 } from "lucide-react";
 import {
   getPaymentQrUrl,
