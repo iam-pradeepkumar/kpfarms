@@ -1,138 +1,50 @@
-/* Server-only storage for the shared global Google connection handle. */
-import { createClient } from "@supabase/supabase-js";
+/* Server-only storage for the Google connection tokens using site_settings. */
+import { supabase } from "@/integrations/supabase/client";
 import { encryptConnectionKey, decryptConnectionKey } from "@/server/connectionKeyCrypto";
 
 export const SHARED_OWNER_ID = "00000000-0000-0000-0000-000000000000";
 const SITE_SETTINGS_FALLBACK_KEY = "gcal_tokens_encrypted";
 
-function isNewSupabaseApiKey(value: string): boolean {
-  return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
-}
-
-function getReliableSupabaseClient() {
-  const url = process.env["SUPABASE_URL"] || "https://ntkinaddmoefuhkxpzid.supabase.co";
-  const key =
-    process.env["SUPABASE_SERVICE_ROLE_KEY"] ||
-    process.env["SUPABASE_PUBLISHABLE_KEY"] ||
-    "sb_publishable_aGL6hwcIg2ODNZc66FmJVA_KypN1h7n";
-
-  return createClient(url, key, {
-    global: {
-      fetch: (input, init) => {
-        const headers = new Headers(init?.headers);
-        if (isNewSupabaseApiKey(key) && headers.get("Authorization") === `Bearer ${key}`) {
-          headers.delete("Authorization");
-        }
-        headers.set("apikey", key);
-        return fetch(input, { ...init, headers });
-      },
-    },
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-}
-
 export async function saveConnectionKeyForUser(
   _userId: string,
-  connectorId: string,
+  _connectorId: string,
   connectionAPIKey: string,
 ) {
   const ciphertext = encryptConnectionKey(connectionAPIKey);
-  const client = getReliableSupabaseClient();
 
-  // 1. Try saving to app_user_connections
-  try {
-    const { error } = await client.from("app_user_connections").upsert(
-      {
-        user_id: SHARED_OWNER_ID,
-        connector_id: connectorId,
-        connection_key_ciphertext: ciphertext,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id,connector_id" },
-    );
-    if (!error) return;
-    console.warn("app_user_connections save warning:", error.message);
-  } catch (e) {
-    console.warn("app_user_connections save failed, falling back to site_settings:", e);
-  }
+  const { error } = await supabase
+    .from("site_settings")
+    .upsert({ key: SITE_SETTINGS_FALLBACK_KEY, value: ciphertext }, { onConflict: "key" });
 
-  // 2. Fallback: Save to site_settings table (works with standard client without service key requirement)
-  try {
-    const { error } = await client
-      .from("site_settings")
-      .upsert({ key: SITE_SETTINGS_FALLBACK_KEY, value: ciphertext }, { onConflict: "key" });
-    if (error) throw error;
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : (typeof e === "object" && e !== null ? JSON.stringify(e) : String(e));
-    console.error("site_settings fallback save error:", e);
-    throw new Error(`Database save error: ${msg}`);
+  if (error) {
+    console.error("site_settings token save error:", error);
+    throw new Error(`Database save error: ${error.message || JSON.stringify(error)}`);
   }
 }
 
 export async function getConnectionKeyForUser(
   _userId: string,
-  connectorId: string,
+  _connectorId: string,
 ): Promise<string | null> {
-  let ciphertext: string | null = null;
-  const client = getReliableSupabaseClient();
-
-  // 1. Try app_user_connections first
   try {
-    const { data, error } = await client
-      .from("app_user_connections")
-      .select("connection_key_ciphertext")
-      .eq("user_id", SHARED_OWNER_ID)
-      .eq("connector_id", connectorId)
+    const { data } = await supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", SITE_SETTINGS_FALLBACK_KEY)
       .maybeSingle();
-    if (!error && data?.connection_key_ciphertext) {
-      ciphertext = data.connection_key_ciphertext as string;
-    }
-  } catch {
-    /* fallback to site_settings below */
-  }
 
-  // 2. Check site_settings fallback if not found in app_user_connections
-  if (!ciphertext) {
-    try {
-      const { data } = await client
-        .from("site_settings")
-        .select("value")
-        .eq("key", SITE_SETTINGS_FALLBACK_KEY)
-        .maybeSingle();
-      if (data?.value) {
-        ciphertext = data.value as string;
-      }
-    } catch {
-      /* ignore */
-    }
-  }
-
-  if (!ciphertext) return null;
-  try {
-    return decryptConnectionKey(ciphertext);
-  } catch {
+    if (!data?.value) return null;
+    return decryptConnectionKey(data.value);
+  } catch (e) {
+    console.error("getConnectionKeyForUser error:", e);
     return null;
   }
 }
 
-export async function deleteConnectionKeyForUser(_userId: string, connectorId: string) {
-  const client = getReliableSupabaseClient();
+export async function deleteConnectionKeyForUser(_userId: string, _connectorId: string) {
   try {
-    await client
-      .from("app_user_connections")
-      .delete()
-      .eq("user_id", SHARED_OWNER_ID)
-      .eq("connector_id", connectorId);
-  } catch {
-    /* ignore */
-  }
-
-  try {
-    await client.from("site_settings").delete().eq("key", SITE_SETTINGS_FALLBACK_KEY);
-  } catch {
-    /* ignore */
+    await supabase.from("site_settings").delete().eq("key", SITE_SETTINGS_FALLBACK_KEY);
+  } catch (e) {
+    console.error("deleteConnectionKeyForUser error:", e);
   }
 }
