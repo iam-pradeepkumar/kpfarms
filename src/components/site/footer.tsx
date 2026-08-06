@@ -54,7 +54,10 @@ export function SiteFooter() {
           <div>
             <div className="flex items-center gap-3">
               <KpMark size={40} />
-              <div className="font-display text-lg font-extrabold uppercase">KP Farm Ventures</div>
+              <div className="font-display text-lg font-extrabold uppercase tracking-tight">
+                <span className="text-kp-green">KP</span> <span className="text-kp-red">Farm</span>{" "}
+                <span className="text-kp-green">Ventures</span>
+              </div>
             </div>
             <p className="mt-4 text-sm text-stone-500">
               Helping poultry farmers grow with advice, training, digital products, and farm visits.

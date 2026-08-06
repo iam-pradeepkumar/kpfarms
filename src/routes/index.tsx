@@ -51,6 +51,7 @@ export const FOUNDER = {
   initials: "SA",
   bio: "I started KP Farm Ventures with one simple vision — to help farmers build profitable, modern, and sustainable poultry businesses through practical knowledge and real-world experience.",
   photos: [
+    { url: "/media/founder-white-shirt.jpg" },
     { url: founderFamily.url },
     { url: founderFormal.url, zoom: 1.25 },
     { url: founderTea.url },
