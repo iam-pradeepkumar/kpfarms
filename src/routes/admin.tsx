@@ -2275,10 +2275,6 @@ function BookingActions({
 
   /* One tap: save the confirmed slot, then hand the ready message to WhatsApp. */
   const confirmAndSend = async () => {
-    if (isOnlineMeeting ? isPastDateTime(date, time) : isPastDate(date)) {
-      alert("That date/time has already passed. Please choose a future slot.");
-      return;
-    }
     const waWindow = waNumber ? window.open("", "_blank") : null;
     const ok = await confirmSlot();
     if (!ok) {
