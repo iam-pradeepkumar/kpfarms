@@ -171,11 +171,11 @@ function Index() {
           src="/media/hero-farm-bg.jpg"
           alt=""
           aria-hidden
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-center"
         />
 
-        {/* Mobile readability gradient overlay */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/80 via-white/60 to-white/80 md:from-white/40 md:via-transparent md:to-white/30" />
+        {/* Readability gradient overlay optimized for all screens */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/90 via-white/80 to-white/90 md:bg-none" />
 
 
         {/* Floating hero decor */}
