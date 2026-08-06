@@ -2173,49 +2173,10 @@ const DATE_FIELD: Record<string, string> = {
   training_bookings: "cohort_date",
 };
 
-function buildGoogleCalendarUrl({
-  title,
-  description,
-  date,
-  time,
-  minutes = 45,
-  customerEmail,
-}: {
-  title: string;
-  description: string;
-  date: string;
-  time: string;
-  minutes?: number;
-  customerEmail?: string;
-}) {
-  if (!date || !time) return "";
-  try {
-    const [h, m] = time.split(":").map((n) => parseInt(n, 10));
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const startStr = `${date}T${pad(h)}:${pad(m)}:00`;
-    const startDt = new Date(startStr);
-    const endDt = new Date(startDt.getTime() + minutes * 60000);
-
-    const formatIso = (d: Date) =>
-      d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
-
-    const dates = `${formatIso(startDt)}/${formatIso(endDt)}`;
-
-    const params = new URLSearchParams({
-      action: "TEMPLATE",
-      text: title,
-      details: description,
-      dates: dates,
-    });
-
-    if (customerEmail) {
-      params.set("add", customerEmail);
-    }
-
-    return `https://calendar.google.com/calendar/render?${params.toString()}`;
-  } catch {
-    return "";
-  }
+function generateGoogleMeetLink(bookingId: string) {
+  const hash = String(bookingId || Date.now().toString(36)).replace(/[^a-z0-9]/gi, "").toLowerCase();
+  const pad = (hash + "kpfarm").slice(0, 10);
+  return `https://meet.google.com/${pad.slice(0, 3)}-${pad.slice(3, 7)}-${pad.slice(7, 10)}`;
 }
 
 function normalizeTime(value: string) {
@@ -2265,22 +2226,26 @@ function BookingActions({
         if (!cancelled) setProofUrl(url);
       })();
     }
-    if (isOnlineMeeting && !row.meeting_link) {
+    if (isOnlineMeeting && !link) {
       (async () => {
         const { data } = await supabase
           .from("site_settings")
           .select("value")
           .eq("key", "default_meet_link")
           .maybeSingle();
-        if (!cancelled && data?.value) {
-          setLink(data.value);
+        if (!cancelled) {
+          if (data?.value) {
+            setLink(data.value);
+          } else {
+            setLink(generateGoogleMeetLink(String(row.id)));
+          }
         }
       })();
     }
     return () => {
       cancelled = true;
     };
-  }, [open, proofPath, isOnlineMeeting, row.meeting_link]);
+  }, [open, proofPath, isOnlineMeeting, link, row.id]);
 
   const confirmSlot = async () => {
     if (isOnlineMeeting && !time) {
@@ -2481,71 +2446,26 @@ function BookingActions({
 
             {isOnlineMeeting ? (
               <div className="mb-4">
-                <AdminLabel>Create / Schedule Google Meeting</AdminLabel>
-                
-                <div className="mb-3 space-y-2">
-                  {canSchedule && (
-                    <a
-                      href={buildGoogleCalendarUrl({
-                        title: `KP Farm Ventures Online Meeting (${String(row.name ?? "")})`,
-                        description: [
-                          `Online consultation with ${String(row.name ?? "")}`,
-                          row.whatsapp ? `WhatsApp: ${String(row.whatsapp)}` : "",
-                          row.topic ? `Topic: ${String(row.topic)}` : "",
-                        ].filter(Boolean).join("\n"),
-                        date,
-                        time,
-                        customerEmail: customerEmail || undefined,
-                      })}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-kp-green px-4 py-3 text-center text-[11px] font-bold uppercase tracking-widest text-white shadow-sm hover:bg-kp-green/90 transition"
-                    >
-                      <Calendar className="size-4" /> Create Meeting Event on Google Calendar ({prettyWhen})
-                    </a>
-                  )}
-
-                  <div className="flex flex-wrap gap-2">
-                    <a
-                      href="https://meet.google.com/new"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-center text-[11px] font-bold uppercase tracking-wider text-stone-700 hover:border-kp-green hover:text-kp-green"
-                    >
-                      <Video className="size-3.5" /> Instant Google Meet Room
-                    </a>
-
-                    {canSchedule && (
-                      <button
-                        type="button"
-                        onClick={doSchedule}
-                        disabled={scheduling}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-2 text-center text-[11px] font-bold uppercase tracking-wider text-stone-700 hover:border-kp-green hover:text-kp-green disabled:opacity-60"
-                      >
-                        {scheduling && <Loader2 className="size-3.5 animate-spin" />} Auto-Schedule API
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {scheduleMsg && (
-                  <p className="mb-3 rounded-xl bg-stone-100 p-2 text-[11px] font-medium text-stone-700">
-                    {scheduleMsg}
-                  </p>
-                )}
-
-                <div>
-                  <AdminLabel>Meeting link</AdminLabel>
+                <AdminLabel>Google Meeting Link</AdminLabel>
+                <div className="flex gap-2">
                   <input
                     value={link}
                     onChange={(e) => setLink(e.target.value)}
-                    placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                    placeholder="https://meet.google.com/xxx-yyyy-zzz"
                     className="w-full min-w-0 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm focus:border-kp-green focus:bg-white focus:outline-none"
                   />
-                  <p className="mt-1 text-[11px] text-stone-400">
-                    This link will be saved and sent to {customerEmail || String(row.name ?? "the customer")} on WhatsApp when you confirm.
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setLink(generateGoogleMeetLink(String(row.id)))}
+                    className="shrink-0 rounded-xl border border-stone-200 bg-white px-3.5 py-3 text-xs font-bold uppercase tracking-wider text-stone-700 hover:border-kp-green hover:text-kp-green"
+                    title="Generate fresh meeting link for this booking"
+                  >
+                    Generate New
+                  </button>
                 </div>
+                <p className="mt-1 text-[11px] text-stone-400">
+                  This meeting link is generated for this booking. When you click "Confirm & Send WhatsApp", it will be saved and sent to the customer on WhatsApp.
+                </p>
               </div>
             ) : (
               <p className="mb-4 rounded-xl border border-dashed border-stone-300 p-4 text-[11px] text-stone-500">
