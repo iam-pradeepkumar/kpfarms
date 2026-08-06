@@ -1,18 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { exchangeAppUserOAuthCode } from "@/integrations/lovable/appUserConnector";
 import {
   GCAL_CONNECTOR_ID,
   adminCalendars,
   requireAdminUser,
   revokeGoogle,
   startGoogleAuth,
+  completeGoogleAuth,
 } from "@/server/gcal.server";
 import {
   deleteConnectionKeyForUser,
   getConnectionKeyForUser,
-  saveConnectionKeyForUser,
 } from "@/server/appUserConnections.server";
 
 /** Step 1 — gives the browser the Google sign-in URL to open in a popup. */
@@ -36,28 +35,33 @@ export const startGoogleCalendarConnect = createServerFn({ method: "POST" })
       if (!request) throw new Error("Sign-in must start from the dashboard.");
       base = new URL(request.url).origin;
     }
-    const returnUrl = `${base}/oauth/google-calendar/return`;
-    const authorizationUrl = await startGoogleAuth(context.userId, returnUrl);
+    const authorizationUrl = await startGoogleAuth(context.userId, base);
     return { authorizationUrl };
   });
 
-/** Step 2 — turns the one-time code from the popup into a saved connection. */
+/** Step 2 — turns the one-time code from the Google redirect into saved tokens. */
 export const completeGoogleCalendarConnect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { code: string }) => {
+  .inputValidator((input: { code: string; origin?: string }) => {
     if (!input?.code) throw new Error("code required");
     return input;
   })
   .handler(async ({ data, context }) => {
     await requireAdminUser(context);
-    const { connectionAPIKey, connectorId } = await exchangeAppUserOAuthCode(
-      "https://connector-gateway.lovable.dev",
-      data.code,
-    );
-    if (connectorId !== GCAL_CONNECTOR_ID) {
-      throw new Error("Sign-in returned the wrong Google service.");
+    let origin = "";
+    if (data.origin) {
+      try {
+        origin = new URL(data.origin).origin;
+      } catch {
+        /* fall through */
+      }
     }
-    await saveConnectionKeyForUser(context.userId, connectorId, connectionAPIKey);
+    if (!origin) {
+      const request = getRequest();
+      if (!request) throw new Error("Missing origin.");
+      origin = new URL(request.url).origin;
+    }
+    await completeGoogleAuth(context.userId, data.code, origin);
     return { ok: true };
   });
 
@@ -66,11 +70,11 @@ export const getMyGoogleCalendar = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdminUser(context);
-    const connectionAPIKey = await getConnectionKeyForUser(context.userId, GCAL_CONNECTOR_ID);
-    if (!connectionAPIKey) {
+    const connectionKey = await getConnectionKeyForUser(context.userId, GCAL_CONNECTOR_ID);
+    if (!connectionKey) {
       return { connected: false, account: "", calendars: [], error: null as string | null };
     }
-    const { calendars, error } = await adminCalendars(connectionAPIKey);
+    const { calendars, error } = await adminCalendars(context.userId);
     return {
       connected: !error,
       account: calendars.find((c) => c.primary)?.id ?? "",
@@ -83,14 +87,6 @@ export const disconnectGoogleCalendar = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdminUser(context);
-    const connectionAPIKey = await getConnectionKeyForUser(context.userId, GCAL_CONNECTOR_ID);
-    if (connectionAPIKey) {
-      try {
-        await revokeGoogle(connectionAPIKey);
-      } catch {
-        /* remove it locally even if Google already forgot it */
-      }
-      await deleteConnectionKeyForUser(context.userId, GCAL_CONNECTOR_ID);
-    }
+    await revokeGoogle(context.userId);
     return { ok: true };
   });

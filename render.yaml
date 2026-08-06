@@ -34,9 +34,9 @@ services:
       # ---- Secrets: paste the values in the Render dashboard ----
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
-      - key: LOVABLE_API_KEY
+      - key: GOOGLE_CLIENT_ID
         sync: false
-      - key: GOOGLE_CALENDAR_APP_USER_CONNECTOR_CLIENT_API_KEY
+      - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: APP_USER_CONNECTION_KEY_SECRET
         sync: false

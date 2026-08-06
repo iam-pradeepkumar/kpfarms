@@ -37,24 +37,28 @@ function OAuthReturn() {
       setTimeout(() => window.close(), 300);
     };
 
-    if (params.get("success") !== "true") {
-      const reason = params.get("error") ?? "Google sign-in did not finish.";
+    const code = params.get("code");
+    const errorParam = params.get("error");
+
+    if (errorParam) {
+      const reason = errorParam === "access_denied"
+        ? "You denied the Google Calendar permission."
+        : `Google sign-in error: ${errorParam}`;
       setMessage(reason);
       notify("appUserConnectorOAuthFailed", reason);
       return;
     }
-    const code = params.get("code");
+
     if (!code) {
-      if (params.get("offline_access_allowed") === "false") {
-        notify("appUserConnectorOAuthComplete");
-        return;
-      }
       const reason = "Google sign-in finished without a code.";
       setMessage(reason);
       notify("appUserConnectorOAuthFailed", reason);
       return;
     }
-    void completeGoogleCalendarConnect({ data: { code } })
+
+    void completeGoogleCalendarConnect({
+      data: { code, origin: window.location.origin },
+    })
       .then(() => notify("appUserConnectorOAuthComplete"))
       .catch(async (e: unknown) => {
         // The code may already have been used successfully — if the account is

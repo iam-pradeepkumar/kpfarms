@@ -1,21 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-/* Server-only helpers for the admin's own Google Calendar sign-in. */
 import {
-  authorizeAppUserOAuth,
-  callAsAppUser,
-  disconnectAppUser,
-} from "@/integrations/lovable/appUserConnector";
-import { getConnectionKeyForUser } from "@/server/appUserConnections.server";
+  type GoogleTokens,
+  callGoogleCalendarAPI,
+  getGoogleAuthUrl,
+  exchangeGoogleCode,
+} from "@/server/google-oauth.server";
+import {
+  getConnectionKeyForUser,
+  saveConnectionKeyForUser,
+  deleteConnectionKeyForUser,
+} from "@/server/appUserConnections.server";
 
-export const GATEWAY_BASE_URL = "https://connector-gateway.lovable.dev";
 export const GCAL_CONNECTOR_ID = "google_calendar";
-
-export const GCAL_SCOPES = [
-  "https://www.googleapis.com/auth/userinfo.email",
-  "https://www.googleapis.com/auth/calendar.events",
-  "https://www.googleapis.com/auth/calendar.readonly",
-];
 
 type AdminContext = { supabase: SupabaseClient<Database>; userId: string };
 
@@ -28,83 +25,150 @@ export async function requireAdminUser(context: AdminContext) {
   if (!isAdmin) throw new Error("Forbidden");
 }
 
-export function clientApiKey(): string {
-  const key = process.env["GOOGLE_CALENDAR_APP_USER_CONNECTOR_CLIENT_API_KEY"];
-  if (!key) throw new Error("Google sign-in is not set up for this project yet.");
-  return key;
+/** Build the redirect URI for the OAuth callback. */
+export function oauthRedirectUri(origin: string): string {
+  return `${origin}/oauth/google-calendar/return`;
 }
 
-export async function startGoogleAuth(userId: string, returnUrl: string) {
-  const existing = await getConnectionKeyForUser(userId, GCAL_CONNECTOR_ID);
-  const { authorizationUrl } = await authorizeAppUserOAuth({
-    gatewayBaseUrl: GATEWAY_BASE_URL,
-    connectorId: GCAL_CONNECTOR_ID,
-    appUserId: userId,
-    clientAPIKey: clientApiKey(),
-    returnUrl,
-    connectionAPIKey: existing ?? undefined,
-    credentialsConfiguration: { scopes: GCAL_SCOPES },
-  });
+/** Start the Google OAuth flow — returns the URL to redirect the admin to. */
+export async function startGoogleAuth(userId: string, origin: string) {
+  const redirectUri = oauthRedirectUri(origin);
+  // Pass userId as state so the callback knows who initiated the flow
+  const authorizationUrl = getGoogleAuthUrl(redirectUri, userId);
   return authorizationUrl;
 }
 
-/** Writable calendars of the Google account this admin signed in with. */
-export async function adminCalendars(connectionAPIKey: string) {
-  const res = await callAsAppUser({
-    gatewayBaseUrl: GATEWAY_BASE_URL,
-    connectionAPIKey,
-    connectorId: GCAL_CONNECTOR_ID,
-    path: "/calendar/v3/users/me/calendarList?minAccessRole=writer",
-  });
-  if (!res.ok) {
-    const text = await res.text();
+/** Exchange the OAuth code and save the tokens. */
+export async function completeGoogleAuth(
+  userId: string,
+  code: string,
+  origin: string,
+) {
+  const redirectUri = oauthRedirectUri(origin);
+  const tokens = await exchangeGoogleCode(code, redirectUri);
+  // Store the full token set (encrypted) in the database
+  await saveConnectionKeyForUser(
+    userId,
+    GCAL_CONNECTOR_ID,
+    JSON.stringify(tokens),
+  );
+  return tokens;
+}
+
+/** Load tokens for the admin from the database. */
+async function loadTokens(userId: string): Promise<GoogleTokens | null> {
+  const stored = await getConnectionKeyForUser(userId, GCAL_CONNECTOR_ID);
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored) as GoogleTokens;
+  } catch {
+    return null;
+  }
+}
+
+/** Update tokens in the database (e.g. after a refresh). */
+async function persistTokens(userId: string, tokens: GoogleTokens) {
+  await saveConnectionKeyForUser(
+    userId,
+    GCAL_CONNECTOR_ID,
+    JSON.stringify(tokens),
+  );
+}
+
+/** Writable calendars of the connected Google account. */
+export async function adminCalendars(userId: string) {
+  const tokens = await loadTokens(userId);
+  if (!tokens) {
     return {
       calendars: [] as { id: string; summary: string; primary: boolean }[],
-      error: `Google Calendar error [${res.status}]: ${text}`,
+      error: "No Google account connected.",
     };
   }
-  const json = (await res.json()) as {
-    items?: Array<{ id: string; summary?: string; primary?: boolean }>;
-  };
-  return {
-    calendars: (json.items ?? []).map((c) => ({
-      id: c.id,
-      summary: c.summary ?? c.id,
-      primary: Boolean(c.primary),
-    })),
-    error: null as string | null,
-  };
+  try {
+    const { response, updatedTokens } = await callGoogleCalendarAPI(
+      tokens,
+      "/users/me/calendarList?minAccessRole=writer",
+    );
+    // Persist refreshed tokens if they changed
+    if (updatedTokens.access_token !== tokens.access_token) {
+      await persistTokens(userId, updatedTokens);
+    }
+    if (!response.ok) {
+      const text = await response.text();
+      return {
+        calendars: [] as { id: string; summary: string; primary: boolean }[],
+        error: `Google Calendar error [${response.status}]: ${text}`,
+      };
+    }
+    const json = (await response.json()) as {
+      items?: Array<{ id: string; summary?: string; primary?: boolean }>;
+    };
+    return {
+      calendars: (json.items ?? []).map((c) => ({
+        id: c.id,
+        summary: c.summary ?? c.id,
+        primary: Boolean(c.primary),
+      })),
+      error: null as string | null,
+    };
+  } catch (e) {
+    return {
+      calendars: [] as { id: string; summary: string; primary: boolean }[],
+      error: e instanceof Error ? e.message : "Failed to fetch calendars.",
+    };
+  }
 }
 
 /** Creates the event with a Google Meet link on the admin's own calendar. */
-export async function createMeetEvent(connectionAPIKey: string, calendarId: string, body: unknown) {
-  const res = await callAsAppUser({
-    gatewayBaseUrl: GATEWAY_BASE_URL,
-    connectionAPIKey,
-    connectorId: GCAL_CONNECTOR_ID,
-    path: `/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?conferenceDataVersion=1&sendUpdates=all`,
-    init: {
+export async function createMeetEvent(
+  userId: string,
+  calendarId: string,
+  body: unknown,
+) {
+  const tokens = await loadTokens(userId);
+  if (!tokens) throw new Error("No Google account connected.");
+
+  const { response, updatedTokens } = await callGoogleCalendarAPI(
+    tokens,
+    `/calendars/${encodeURIComponent(calendarId)}/events?conferenceDataVersion=1&sendUpdates=all`,
+    {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     },
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Google Calendar failed [${res.status}]: ${text}`);
+  );
+
+  if (updatedTokens.access_token !== tokens.access_token) {
+    await persistTokens(userId, updatedTokens);
   }
-  return (await res.json()) as {
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Google Calendar failed [${response.status}]: ${text}`);
+  }
+  return (await response.json()) as {
     hangoutLink?: string;
     htmlLink?: string;
     organizer?: { email?: string };
-    conferenceData?: { entryPoints?: Array<{ entryPointType?: string; uri?: string }> };
+    conferenceData?: {
+      entryPoints?: Array<{ entryPointType?: string; uri?: string }>;
+    };
   };
 }
 
-export async function revokeGoogle(connectionAPIKey: string) {
-  await disconnectAppUser({
-    gatewayBaseUrl: GATEWAY_BASE_URL,
-    connectionAPIKey,
-    connectorId: GCAL_CONNECTOR_ID,
-  });
+/** Disconnect Google — just remove stored tokens. */
+export async function revokeGoogle(userId: string) {
+  // Optionally revoke the token at Google
+  const tokens = await loadTokens(userId);
+  if (tokens) {
+    try {
+      await fetch(
+        `https://oauth2.googleapis.com/revoke?token=${tokens.access_token}`,
+        { method: "POST" },
+      );
+    } catch {
+      /* best effort */
+    }
+  }
+  await deleteConnectionKeyForUser(userId, GCAL_CONNECTOR_ID);
 }
