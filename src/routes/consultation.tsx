@@ -282,6 +282,7 @@ function Consultation() {
                 kind="consultation"
                 bookingId={bookingId}
                 whatsapp={form.whatsapp}
+                amountNote="₹99"
                 onDone={finishPayment}
                 onBack={() => setStep(2)}
               />

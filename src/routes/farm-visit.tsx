@@ -247,6 +247,7 @@ function FarmVisit() {
                 kind="farm_visit"
                 bookingId={bookingId}
                 whatsapp={form.whatsapp}
+                amountNote="₹699"
                 onDone={finishPayment}
                 onBack={() => setStep(2)}
               />

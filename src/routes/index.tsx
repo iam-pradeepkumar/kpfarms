@@ -564,9 +564,21 @@ function Index() {
               </div>
               <h2 className="font-display text-3xl font-extrabold md:text-4xl">What farmers say</h2>
             </div>
-            <Link to="/testimonials" className="text-sm font-bold text-kp-green hover:underline">
-              See all →
-            </Link>
+            <div className="flex flex-wrap items-center gap-3">
+              <a
+                href="https://maps.app.goo.gl/p8MTR1emjPhzFgTw5?g_st=iwb"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-xs font-bold text-stone-700 transition hover:border-kp-gold hover:bg-white hover:shadow-sm"
+              >
+                <span className="text-kp-gold font-bold">★★★★★</span>
+                <span>Google Reviews</span>
+                <span className="text-stone-400">↗</span>
+              </a>
+              <Link to="/testimonials" className="text-sm font-bold text-kp-green hover:underline">
+                See all →
+              </Link>
+            </div>
           </div>
           <div className="marquee-mask group relative overflow-hidden">
             <div className="animate-marquee-x flex w-max gap-4 group-hover:[animation-play-state:paused]">
@@ -590,7 +602,15 @@ function Index() {
               ))}
             </div>
           </div>
-          <div className="mt-8 text-center">
+          <div className="mt-8 flex flex-wrap justify-center gap-3 text-center">
+            <a
+              href="https://maps.app.goo.gl/p8MTR1emjPhzFgTw5?g_st=iwb"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-kp-gold/40 bg-kp-gold/10 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-stone-800 hover:bg-kp-gold/20 transition-colors"
+            >
+              ⭐ Read & Rate us on Google Reviews ↗
+            </a>
             <Link
               to="/testimonials"
               className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-stone-700 hover:border-kp-green hover:text-kp-green"

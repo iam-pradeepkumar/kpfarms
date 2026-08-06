@@ -110,13 +110,23 @@ function TestimonialsPage() {
           <p className="text-sm text-stone-600">
             Did you train with us or buy a product? We'd love to hear about it.
           </p>
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-kp-green px-6 py-3 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-green-900/10 transition hover:opacity-90"
-          >
-            <Plus size={14} /> Add your review
-          </button>
+          <div className="flex flex-wrap justify-center gap-3">
+            <a
+              href="https://maps.app.goo.gl/p8MTR1emjPhzFgTw5?g_st=iwb"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-kp-gold/50 bg-kp-gold/10 px-6 py-3 text-xs font-bold uppercase tracking-widest text-stone-800 transition hover:bg-kp-gold/20"
+            >
+              ⭐ Read & Rate us on Google Reviews ↗
+            </a>
+            <button
+              type="button"
+              onClick={() => setShowForm(true)}
+              className="inline-flex items-center gap-2 rounded-full bg-kp-green px-6 py-3 text-xs font-bold uppercase tracking-widest text-white shadow-lg shadow-green-900/10 transition hover:opacity-90"
+            >
+              <Plus size={14} /> Add your review
+            </button>
+          </div>
         </div>
       </section>
 

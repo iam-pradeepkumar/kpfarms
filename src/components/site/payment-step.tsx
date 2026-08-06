@@ -86,6 +86,12 @@ export function PaymentStep({
           )}
         </div>
         <div className="text-sm text-stone-700">
+          {amountNote && (
+            <div className="mb-3 inline-flex items-center gap-2 rounded-xl bg-kp-green/10 border border-kp-green/30 px-4 py-2 text-base font-extrabold text-kp-green shadow-xs">
+              <span className="text-xs uppercase tracking-widest text-stone-500 font-semibold">Amount to Pay:</span>
+              <span>{amountNote}</span>
+            </div>
+          )}
           <div className="font-display text-lg font-extrabold">Scan and pay</div>
           <p className="mt-1 text-stone-600">
             Scan this QR with Google Pay, PhonePe, Paytm or any UPI app
