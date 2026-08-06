@@ -1802,6 +1802,14 @@ function TestimonialsTab() {
           >
             <Plus size={14} /> Add testimonial
           </button>
+          <a
+            href="https://maps.app.goo.gl/p8MTR1emjPhzFgTw5?g_st=iwb"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-5 py-2 text-xs font-bold uppercase tracking-widest text-white shadow-md shadow-blue-900/10 hover:bg-blue-700"
+          >
+            ⭐ Google Maps Link ↗
+          </a>
         </div>
       </div>
 

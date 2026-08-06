@@ -233,10 +233,17 @@ function TestimonialCard({ r }: { r: ResolvedTestimonial }) {
             Top Pick
           </span>
         )}
-        <div className="mb-3 flex gap-1 text-kp-gold">
-          {Array.from({ length: r.rating }).map((_, i) => (
-            <Star key={i} size={14} fill="currentColor" strokeWidth={0} />
-          ))}
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex gap-1 text-kp-gold">
+            {Array.from({ length: r.rating }).map((_, i) => (
+              <Star key={i} size={14} fill="currentColor" strokeWidth={0} />
+            ))}
+          </div>
+          {r.place?.toLowerCase().includes("google") && (
+            <span className="rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-[10px] font-bold text-blue-700 flex items-center gap-1">
+              <span className="font-extrabold text-blue-600">G</span> Google Review
+            </span>
+          )}
         </div>
         {r.text && <p className="mb-5 flex-1 text-sm leading-relaxed text-stone-700">"{r.text}"</p>}
         <div className="flex items-center gap-3 border-t border-stone-100 pt-4">

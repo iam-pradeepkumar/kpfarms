@@ -582,24 +582,34 @@ function Index() {
           </div>
           <div className="marquee-mask group relative overflow-hidden">
             <div className="animate-marquee-x flex w-max gap-4 group-hover:[animation-play-state:paused]">
-              {[...testimonials, ...testimonials].map((t, i) => (
-                <figure
-                  key={`${t.id}-${i}`}
-                  className="w-64 shrink-0 rounded-2xl border border-stone-200 bg-stone-50 p-5"
-                >
-                  <div className="mb-2 text-sm text-kp-gold" aria-hidden>
-                    {"★".repeat(t.rating)}
-                    <span className="text-stone-300">{"★".repeat(5 - t.rating)}</span>
-                  </div>
-                  <blockquote className="mb-3 text-sm leading-relaxed text-stone-700">
-                    "{t.text}"
-                  </blockquote>
-                  <figcaption className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
-                    {t.name}
-                    {t.place ? ` · ${t.place}` : ""}
-                  </figcaption>
-                </figure>
-              ))}
+              {[...testimonials, ...testimonials].map((t, i) => {
+                const isGoogle = t.place?.toLowerCase().includes("google");
+                return (
+                  <figure
+                    key={`${t.id}-${i}`}
+                    className="w-64 shrink-0 rounded-2xl border border-stone-200 bg-stone-50 p-5"
+                  >
+                    <div className="mb-2 flex items-center justify-between">
+                      <div className="text-sm text-kp-gold" aria-hidden>
+                        {"★".repeat(t.rating)}
+                        <span className="text-stone-300">{"★".repeat(5 - t.rating)}</span>
+                      </div>
+                      {isGoogle && (
+                        <span className="rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-[9px] font-bold text-blue-700">
+                          G Google
+                        </span>
+                      )}
+                    </div>
+                    <blockquote className="mb-3 text-sm leading-relaxed text-stone-700">
+                      "{t.text}"
+                    </blockquote>
+                    <figcaption className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
+                      {t.name}
+                      {t.place ? ` · ${t.place}` : ""}
+                    </figcaption>
+                  </figure>
+                );
+              })}
             </div>
           </div>
           <div className="mt-8 flex flex-wrap justify-center gap-3 text-center">
@@ -628,23 +638,23 @@ const FALLBACK_TESTIMONIALS: Pick<TestimonialRow, "id" | "name" | "place" | "tex
   {
     id: "s1",
     name: "Ravi K.",
-    place: "Coimbatore",
-    text: "The meeting call saved my chicks. Clear and simple tips in just 30 minutes.",
+    place: "Google Review · Coimbatore",
     rating: 5,
+    text: "Joined their poultry training program. Practical, simple and honest advice. Selva sir guided us step by step on shed design and feed.",
   },
   {
     id: "s2",
-    name: "Priya S.",
-    place: "Salem",
-    text: "The training gave me the courage to start my own 500-bird farm.",
+    name: "Murugan P.",
+    place: "Google Review · Madurai",
     rating: 5,
+    text: "Booked a farm visit. Seeing the live shed, water management and feeding setup gave us complete confidence to start our farm.",
   },
   {
     id: "s3",
-    name: "Manoj R.",
-    place: "Erode",
-    text: "The farm visit was worth every rupee — the shed tips alone helped me a lot.",
+    name: "Suresh Kumar",
+    place: "Google Review · Salem",
     rating: 5,
+    text: "Got consultation call for our 5000 bird shed setup. Very detailed cost estimation and equipment guidance. Worth every rupee!",
   },
 ];
 
