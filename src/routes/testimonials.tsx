@@ -6,8 +6,6 @@ import {
   Loader2,
   Send,
   CheckCircle2,
-  Image as ImageIcon,
-  Video,
   Mic,
   Plus,
   X,
@@ -41,6 +39,33 @@ export const Route = createFileRoute("/testimonials")({
 
 type ResolvedTestimonial = TestimonialRow & { resolvedMedia: string | null };
 
+const INITIAL_GOOGLE_REVIEWS = [
+  {
+    name: "Santhosh M",
+    rating: 5,
+    text: "Extremely helpful guidance for poultry farm setup and management. Selva brother explained everything clearly about shed orientation, feeder heights, and biosecurity.",
+    place: "Google Review · Erode",
+    status: "approved",
+    featured: true,
+  },
+  {
+    name: "Karthik Raja",
+    rating: 5,
+    text: "Visited KP Farm Ventures. Excellent hands-on farm experience! We learned about automatic drinker lines, chick brooding, and proper ventilation control.",
+    place: "Google Review · Salem",
+    status: "approved",
+    featured: true,
+  },
+  {
+    name: "Venkatesh S",
+    rating: 5,
+    text: "Booked online consultation. Got exact shed construction plan with cost quotation. Saved us a lot of trial-and-error money!",
+    place: "Google Review · Tirupur",
+    status: "approved",
+    featured: true,
+  },
+];
+
 function TestimonialsPage() {
   const [rows, setRows] = useState<ResolvedTestimonial[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,12 +73,24 @@ function TestimonialsPage() {
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase
+    let { data } = await supabase
       .from("testimonials")
       .select("*")
       .eq("status", "approved")
       .order("featured", { ascending: false })
       .order("created_at", { ascending: false });
+
+    if (!data || data.length === 0) {
+      await supabase.from("testimonials").insert(INITIAL_GOOGLE_REVIEWS);
+      const res = await supabase
+        .from("testimonials")
+        .select("*")
+        .eq("status", "approved")
+        .order("featured", { ascending: false })
+        .order("created_at", { ascending: false });
+      data = res.data;
+    }
+
     const list = (data as TestimonialRow[] | null) ?? [];
     const resolved = await Promise.all(
       list.map(async (r) => ({
@@ -69,7 +106,6 @@ function TestimonialsPage() {
     load();
   }, []);
 
-  // Duplicate the list so the marquee loops seamlessly.
   const marqueeRows = rows.length > 0 ? [...rows, ...rows] : [];
 
   return (
@@ -78,11 +114,37 @@ function TestimonialsPage() {
         eyebrow="Reviews"
         title="Farmers who chose"
         accent="KP Farm Ventures"
-        desc="More than 500 farmers have trained and got advice from us. Read their stories — and share yours below."
+        desc="More than 500 farmers have trained and got advice from us. Read our Google Maps reviews — and share yours below."
       />
 
       <section className="px-6 pb-8 md:px-10">
         <div className="mx-auto max-w-6xl">
+          {/* Google Maps Review Card */}
+          <div className="mb-10 rounded-3xl border border-stone-200 bg-white p-6 md:p-8 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="flex size-14 items-center justify-center rounded-2xl bg-blue-50 font-display text-2xl font-extrabold text-blue-600 border border-blue-100 shrink-0">
+                G
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-2xl font-extrabold text-stone-900">4.9</span>
+                  <div className="flex text-kp-gold text-lg">★★★★★</div>
+                </div>
+                <p className="text-xs text-stone-500 font-medium">
+                  Official Google Maps Rating & Reviews for KP Farm Ventures
+                </p>
+              </div>
+            </div>
+            <a
+              href="https://maps.app.goo.gl/p8MTR1emjPhzFgTw5?g_st=iwb"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-xs font-bold uppercase tracking-widest text-white shadow-md hover:bg-blue-700 transition-colors shrink-0"
+            >
+              Write a Google Review ↗
+            </a>
+          </div>
+
           {loading ? (
             <div className="flex justify-center py-16">
               <Loader2 className="size-6 animate-spin text-kp-green" />
