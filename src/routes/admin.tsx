@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { scheduleGoogleMeet, getCalendarStatus } from "@/lib/meetings.functions";
+import { saveAdminSiteSettings } from "@/lib/settings.functions";
 import {
   startGoogleCalendarConnect,
   getMyGoogleCalendar,
@@ -2564,12 +2565,13 @@ function SettingsTab() {
       alert(upErr.message);
       return;
     }
-    const { error } = await supabase
-      .from("site_settings")
-      .upsert({ key: PAYMENT_QR_KEY, value: path }, { onConflict: "key" });
+    try {
+      await saveAdminSiteSettings({ [PAYMENT_QR_KEY]: path });
+      load();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update QR code");
+    }
     setUploading(false);
-    if (error) alert(error.message);
-    else load();
   };
 
   return (
@@ -2813,10 +2815,7 @@ function HeroStatsEditorCard() {
     setSaving(true);
     setMsg("");
     try {
-      const updates = Object.entries(stats).map(([key, value]) =>
-        supabase.from("site_settings").upsert({ key, value }, { onConflict: "key" })
-      );
-      await Promise.all(updates);
+      await saveAdminSiteSettings(stats);
       setMsg("Stats updated successfully!");
     } catch {
       setMsg("Failed to update stats.");
@@ -2923,10 +2922,7 @@ function FooterContactCard() {
     setSaving(true);
     setMsg("");
     try {
-      const updates = Object.entries(contact).map(([key, value]) =>
-        supabase.from("site_settings").upsert({ key, value }, { onConflict: "key" })
-      );
-      await Promise.all(updates);
+      await saveAdminSiteSettings(contact);
       setMsg("Contact info updated!");
     } catch {
       setMsg("Failed to update contact info.");
@@ -3056,16 +3052,15 @@ function AdminWhatsappCard() {
   const save = async () => {
     const num = value.replace(/[^0-9]/g, "");
     setSaving(true);
-    const { error } = await supabase
-      .from("site_settings")
-      .upsert({ key: ADMIN_WHATSAPP_KEY, value: num }, { onConflict: "key" });
-    setSaving(false);
-    if (error) alert(error.message);
-    else {
+    try {
+      await saveAdminSiteSettings({ [ADMIN_WHATSAPP_KEY]: num });
       setValue(num);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update WhatsApp number");
     }
+    setSaving(false);
   };
 
   return (
