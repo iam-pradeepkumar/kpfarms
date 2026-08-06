@@ -83,9 +83,16 @@ function useMediaUrl(value: string | null) {
   return url;
 }
 
+/** Pull the first YouTube URL out of a string that may contain extra text/hashtags */
+function extractYoutubeUrl(text: string | null | undefined): string | null {
+  if (!text) return null;
+  const m = text.match(/https?:\/\/(?:www\.)?(?:youtu\.be|youtube\.com)\/\S+/i);
+  return m ? m[0] : null;
+}
+
 function PostCard({ post, onOpen }: { post: BlogPost; onOpen: () => void }) {
   const cover = useMediaUrl(post.cover_url);
-  const isYoutube = !!post.video_url && /youtube|youtu\.be/i.test(post.video_url);
+  const youtubeUrl = extractYoutubeUrl(post.video_url);
   return (
     <article className="group flex flex-col overflow-hidden rounded-3xl border border-stone-200 bg-white transition hover:-translate-y-1 hover:shadow-xl">
       <div className="aspect-video overflow-hidden bg-gradient-to-br from-kp-green/20 via-kp-gold/15 to-kp-red/10">
@@ -101,9 +108,9 @@ function PostCard({ post, onOpen }: { post: BlogPost; onOpen: () => void }) {
         <h2 className="mb-3 font-display text-lg font-bold">{post.title}</h2>
         <p className="mb-6 text-sm text-stone-600">{post.excerpt}</p>
         <div className="mt-auto flex flex-wrap gap-3">
-          {isYoutube ? (
+          {youtubeUrl ? (
             <a
-              href={post.video_url!}
+              href={youtubeUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-kp-red transition group-hover:gap-2"
@@ -126,7 +133,9 @@ function PostCard({ post, onOpen }: { post: BlogPost; onOpen: () => void }) {
 function PostModal({ post, onClose }: { post: BlogPost; onClose: () => void }) {
   const cover = useMediaUrl(post.cover_url);
   const video = useMediaUrl(post.video_url);
-  const isEmbed = !!post.video_url && /youtube|youtu\.be|vimeo/i.test(post.video_url);
+  const youtubeUrl = extractYoutubeUrl(post.video_url);
+  const isEmbed = !!youtubeUrl;
+
 
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-stone-900/60 p-4 backdrop-blur-sm">
@@ -147,10 +156,9 @@ function PostModal({ post, onClose }: { post: BlogPost; onClose: () => void }) {
           <img src={cover} alt={post.title} className="mb-5 w-full rounded-2xl object-cover" />
         )}
 
-        {post.video_url &&
-          (isEmbed ? (
+        {(isEmbed ? (
             <a
-              href={post.video_url}
+              href={youtubeUrl!}
               target="_blank"
               rel="noopener noreferrer"
               className="mb-5 inline-flex items-center gap-2 rounded-xl bg-kp-red px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white shadow-md hover:opacity-90"

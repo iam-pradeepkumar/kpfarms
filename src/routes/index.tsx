@@ -263,10 +263,10 @@ function Index() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             {[
-              { n: "01", color: "text-kp-green", bg: "bg-kp-green/10", title: "Poultry Farm Advice & Consultation", desc: "Get expert guidance on starting, running and growing your poultry farm — online or in person.", to: "/consultation" },
-              { n: "02", color: "text-kp-red", bg: "bg-kp-red/10", title: "Farm Visit — Real Experience", desc: "We invite you to our farm to see real shed setup, feeding, safety and management firsthand.", to: "/farm-visit" },
-              { n: "03", color: "text-kp-gold", bg: "bg-kp-gold/10", title: "Construction & Shed Design Plan", desc: "Get a professional shed design plan tailored to your land, flock size and budget.", to: "/consultation" },
-              { n: "04", color: "text-kp-green", bg: "bg-kp-green/10", title: "Shed Making Quotation", desc: "We provide a detailed cost quotation for building your poultry shed — no hidden charges.", to: "/consultation" },
+              { n: "01", color: "text-kp-green", bg: "bg-kp-green/10", title: "Poultry Farm Advice and Consultation", desc: "Get expert guidance on starting, running and growing your poultry farm — online or in person.", to: "/consultation" },
+              { n: "02", color: "text-kp-red",   bg: "bg-kp-red/10",   title: "Invite for the Farm Visit to Explore Real Experience", desc: "We invite you to our farm to see real shed setup, feeding, water, safety and day-to-day management firsthand.", to: "/farm-visit" },
+              { n: "03", color: "text-kp-gold",  bg: "bg-kp-gold/10",  title: "Construction and Shed Design Plan", desc: "Get a professional shed design plan tailored to your land, flock size and budget.", to: "/consultation" },
+              { n: "04", color: "text-kp-green", bg: "bg-kp-green/10", title: "Construction and Shed Making Quotation", desc: "We provide a detailed cost quotation for building your poultry shed — no hidden charges.", to: "/consultation" },
             ].map((s) => (
               <Link
                 key={s.n}
