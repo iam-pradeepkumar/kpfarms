@@ -18,6 +18,7 @@ import {
   ExternalLink,
   Calendar,
   Video,
+  Bell,
 } from "lucide-react";
 import {
   getPaymentQrUrl,
@@ -2315,7 +2316,7 @@ function BookingActions({
       (prettyWhen ? `\n${whenTextLabel}: ${prettyWhen}` : "") +
       (isOnlineMeeting && link.trim() ? `\nMeeting link: ${link.trim()}` : "") +
       (isOnlineMeeting
-        ? `\n\nPlease join 5 minutes early. — KP Farm Ventures`
+        ? `\n\nPlease join 5 minutes early. Automated reminders will fire 1 hour and 5 minutes before your meeting. — KP Farm Ventures`
         : `\n\nPlease reach 10 minutes early. — KP Farm Ventures`),
   );
   const waNumber = toWaDigits(row.whatsapp as string | null);
@@ -2464,7 +2465,7 @@ function BookingActions({
                   </button>
                 </div>
                 <p className="mt-1 text-[11px] text-stone-400">
-                  This meeting link is generated for this booking. When you click "Confirm & Send WhatsApp", it will be saved and sent to the customer on WhatsApp.
+                  This meeting link is generated for this booking. When you click "Schedule Meeting", it will be saved and sent to the customer on WhatsApp.
                 </p>
               </div>
             ) : (
@@ -2474,13 +2475,26 @@ function BookingActions({
               </p>
             )}
 
+            {isOnlineMeeting && date && time && (
+              <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs text-amber-900">
+                <div className="flex items-center gap-2 font-bold uppercase tracking-wide text-amber-800">
+                  <Bell className="size-4 text-kp-gold" /> Meeting Reminders Active
+                </div>
+                <p className="mt-1 text-[11px] leading-relaxed text-amber-800/90">
+                  Automated reminders will fire <strong>1 hour</strong> and <strong>5 minutes</strong> before the scheduled meeting on <strong>{prettyWhen}</strong>.
+                </p>
+              </div>
+            )}
+
             <button
               onClick={confirmAndSend}
               disabled={saving}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-kp-green px-5 py-3 text-xs font-bold uppercase tracking-widest text-white hover:opacity-90 disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-kp-green px-5 py-3.5 text-xs font-bold uppercase tracking-widest text-white shadow-md hover:bg-kp-green/90 disabled:opacity-60 transition"
             >
               {saving && <Loader2 className="size-4 animate-spin" />}
-              {waNumber ? "Confirm & send on WhatsApp" : `Confirm ${whenLabel.toLowerCase()}`}
+              {waNumber
+                ? `Schedule Meeting & Send WhatsApp (${prettyWhen || "Pick Slot"})`
+                : `Schedule Meeting (${prettyWhen || "Pick Slot"})`}
             </button>
           </div>
         </div>
