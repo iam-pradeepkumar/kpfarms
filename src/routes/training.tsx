@@ -153,6 +153,7 @@ function Training() {
         setSelectedId(list[0].id);
       }
       setProgramsLoading(false);
+      window.dispatchEvent(new Event("page-data-loaded"));
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

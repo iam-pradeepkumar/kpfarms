@@ -135,26 +135,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function LoadingScreen() {
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-stone-50 p-4">
-      <div className="relative aspect-video w-full max-w-lg overflow-hidden rounded-3xl border border-stone-200 bg-black shadow-2xl">
-        <video
-          src="https://www.image2url.com/r2/default/videos/1786038730680-c9cd68c1-328d-4f08-8152-4b40d57c7104.mp4"
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="h-full w-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-6">
-          <div className="flex items-center gap-3">
-            <span className="flex size-4 items-center justify-center">
-              <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-white opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
-            </span>
-            <span className="text-sm font-bold uppercase tracking-widest text-white drop-shadow">
-              Loading KP Farm Ventures...
-            </span>
-          </div>
+    <div className="fixed inset-0 z-[9999] bg-black">
+      <video
+        src="https://www.image2url.com/r2/default/videos/1786038730680-c9cd68c1-328d-4f08-8152-4b40d57c7104.mp4"
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+      <div className="absolute inset-0 bg-black/35 flex flex-col justify-end p-8 md:p-12">
+        <div className="flex items-center gap-3">
+          <span className="flex size-4 items-center justify-center">
+            <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-white opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+          </span>
+          <span className="text-sm font-bold uppercase tracking-widest text-white drop-shadow">
+            Loading KP Farm Ventures...
+          </span>
         </div>
       </div>
     </div>
@@ -179,25 +177,27 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [showLoading, setShowLoading] = useState(true);
-  const [lastPath, setLastPath] = useState(pathname);
 
   useEffect(() => {
-    const initTimer = setTimeout(() => {
+    // Show loader on page transition
+    setShowLoading(true);
+
+    const fallbackTimer = setTimeout(() => {
       setShowLoading(false);
-    }, 1000);
-    return () => clearTimeout(initTimer);
-  }, []);
+    }, 1500); // 1.5s fallback so page is never blocked forever
 
-  useEffect(() => {
-    if (pathname !== lastPath) {
-      setShowLoading(true);
-      setLastPath(pathname);
-      const timer = setTimeout(() => {
-        setShowLoading(false);
-      }, 800);
-      return () => clearTimeout(timer);
-    }
-  }, [pathname, lastPath]);
+    const handleLoaded = () => {
+      // Small 150ms delay to make it smooth and let transitions settle
+      setTimeout(() => setShowLoading(false), 150);
+      clearTimeout(fallbackTimer);
+    };
+
+    window.addEventListener("page-data-loaded", handleLoaded);
+    return () => {
+      window.removeEventListener("page-data-loaded", handleLoaded);
+      clearTimeout(fallbackTimer);
+    };
+  }, [pathname]);
 
   return (
     <QueryClientProvider client={queryClient}>

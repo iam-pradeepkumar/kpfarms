@@ -67,6 +67,7 @@ function PoultryProducts() {
       );
       setRows(withImg);
       setLoading(false);
+      window.dispatchEvent(new Event("page-data-loaded"));
     })();
   }, []);
 

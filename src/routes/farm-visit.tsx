@@ -50,40 +50,47 @@ function FarmVisit() {
 
   useEffect(() => {
     const wa = getRememberedBookingWhatsapp("farm_visit");
-    if (!wa) return;
+    if (!wa) {
+      window.dispatchEvent(new Event("page-data-loaded"));
+      return;
+    }
     (async () => {
-      const existing = await resumeBooking("farm_visit", wa);
-      if (!existing?.id) {
-        clearBookingWhatsapp("farm_visit");
-        return;
-      }
-      if (existing.visit_date && isPastDate(existing.visit_date)) {
-        setErrMsg("You already booked date is over, book new date");
+      try {
+        const existing = await resumeBooking("farm_visit", wa);
+        if (!existing?.id) {
+          clearBookingWhatsapp("farm_visit");
+          return;
+        }
+        if (existing.visit_date && isPastDate(existing.visit_date)) {
+          setErrMsg("You already booked date is over, book new date");
+          setBookingId(existing.id);
+          setForm((f) => ({
+            ...f,
+            whatsapp: existing.whatsapp || wa,
+            name: existing.name || f.name,
+            email: existing.email || f.email,
+            visit_date: "",
+            group_size: existing.group_size != null ? String(existing.group_size) : f.group_size,
+            notes: existing.notes || f.notes,
+          }));
+          setStep(2);
+          return;
+        }
         setBookingId(existing.id);
         setForm((f) => ({
           ...f,
           whatsapp: existing.whatsapp || wa,
           name: existing.name || f.name,
           email: existing.email || f.email,
-          visit_date: "",
+          visit_date: existing.visit_date || f.visit_date,
           group_size: existing.group_size != null ? String(existing.group_size) : f.group_size,
           notes: existing.notes || f.notes,
+          payment_reference: existing.payment_reference || f.payment_reference,
         }));
-        setStep(2);
-        return;
+        setStep(existing.booking_step === "slot_booked" ? 3 : 2);
+      } finally {
+        window.dispatchEvent(new Event("page-data-loaded"));
       }
-      setBookingId(existing.id);
-      setForm((f) => ({
-        ...f,
-        whatsapp: existing.whatsapp || wa,
-        name: existing.name || f.name,
-        email: existing.email || f.email,
-        visit_date: existing.visit_date || f.visit_date,
-        group_size: existing.group_size != null ? String(existing.group_size) : f.group_size,
-        notes: existing.notes || f.notes,
-        payment_reference: existing.payment_reference || f.payment_reference,
-      }));
-      setStep(existing.booking_step === "slot_booked" ? 3 : 2);
     })();
   }, []);
 

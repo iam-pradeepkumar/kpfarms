@@ -73,48 +73,70 @@ function Index() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [openPost, setOpenPost] = useState<BlogPost | null>(null);
 
-  useEffect(() => {
-    listBlogPosts().then((p) => {
-      setPosts(p.slice(0, 3));
-    });
-  }, []);
+  const [chickenProdCount, setChickenProdCount] = useState(10000);
+  const [batchRunCount, setBatchRunCount] = useState(50);
 
-  useEffect(() => {
-    getHomeVideoUrls()
-      .then(setVideos)
-      .catch(() => {});
-  }, []);
-
-  // Live count of trained farmers: 500 base + everyone registered for training
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase.rpc("trained_farmers_count" as never);
-      const n = Number(data);
-      if (!error && Number.isFinite(n) && n > 0) setTrainedCount(n);
-    })();
-  }, []);
+      try {
+        const results = await Promise.all([
+          listBlogPosts().then((p) => setPosts(p.slice(0, 3))).catch(() => {}),
+          getHomeVideoUrls().then(setVideos).catch(() => {}),
+          supabase.rpc("trained_farmers_count" as never).then(({ data, error }) => {
+            const n = Number(data);
+            if (!error && Number.isFinite(n) && n > 0) setTrainedCount(n);
+          }).catch(() => {}),
+          supabase.from("consultation_bookings" as never).select("id", { count: "exact", head: true }).catch(() => null),
+          supabase.from("farm_visit_bookings" as never).select("id", { count: "exact", head: true }).catch(() => null),
+          supabase.from("training_registrations" as never).select("id", { count: "exact", head: true }).catch(() => null),
+          supabase.from("testimonials")
+            .select("id, name, place, text, rating")
+            .eq("status", "approved")
+            .not("text", "is", null)
+            .order("featured", { ascending: false })
+            .order("created_at", { ascending: false })
+            .limit(12)
+            .then(({ data }) => {
+              const rows = (data as any) ?? [];
+              setTestimonials(rows.length ? rows : FALLBACK_TESTIMONIALS);
+            }).catch(() => {}),
+          supabase
+            .from("site_settings")
+            .select("key, value")
+            .in("key", ["stat_consultations", "stat_farm_visits", "stat_training", "stat_chicken_production", "stat_batch_counts"])
+            .then(({ data }) => {
+              data?.forEach((row) => {
+                if (row.key === "stat_consultations" && row.value) setConsultCount(Number(row.value) || 507);
+                if (row.key === "stat_farm_visits" && row.value) setVisitCount(Number(row.value) || 203);
+                if (row.key === "stat_training" && row.value) setTrainingCount(Number(row.value) || 150);
+                if (row.key === "stat_chicken_production" && row.value) setChickenProdCount(Number(row.value) || 10000);
+                if (row.key === "stat_batch_counts" && row.value) setBatchRunCount(Number(row.value) || 50);
+              });
+            }).catch(() => {})
+        ]);
 
-  // Live animated counters
-  useEffect(() => {
-    (async () => {
-      const [c1, c2, c3] = await Promise.all([
-        supabase.from("consultation_bookings" as never).select("id", { count: "exact", head: true }),
-        supabase.from("farm_visit_bookings" as never).select("id", { count: "exact", head: true }),
-        supabase.from("training_registrations" as never).select("id", { count: "exact", head: true }),
-      ]);
-      const animate = (base: number, extra: number, setter: (n: number) => void) => {
-        const target = base + (extra || 0);
-        let current = base;
-        const step = Math.ceil((target - base) / 30);
-        const id = setInterval(() => {
-          current = Math.min(current + step, target);
-          setter(current);
-          if (current >= target) clearInterval(id);
-        }, 40);
-      };
-      animate(500, (c1 as { count: number | null }).count ?? 0, setConsultCount);
-      animate(200, (c2 as { count: number | null }).count ?? 0, setVisitCount);
-      animate(150, (c3 as { count: number | null }).count ?? 0, setTrainingCount);
+        const animate = (base: number, extra: number, setter: (n: number) => void) => {
+          const target = base + (extra || 0);
+          let current = base;
+          const step = Math.ceil((target - base) / 30);
+          const id = setInterval(() => {
+            current = Math.min(current + step, target);
+            setter(current);
+            if (current >= target) clearInterval(id);
+          }, 40);
+        };
+        
+        const c1 = results[3];
+        const c2 = results[4];
+        const c3 = results[5];
+        animate(500, (c1 as any)?.count ?? 0, setConsultCount);
+        animate(200, (c2 as any)?.count ?? 0, setVisitCount);
+        animate(150, (c3 as any)?.count ?? 0, setTrainingCount);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        window.dispatchEvent(new Event("page-data-loaded"));
+      }
     })();
   }, []);
 
@@ -138,42 +160,6 @@ function Index() {
     );
     nodes.forEach((n) => io.observe(n));
     return () => io.disconnect();
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from("testimonials")
-        .select("id, name, place, text, rating")
-        .eq("status", "approved")
-        .not("text", "is", null)
-        .order("featured", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(12);
-      const rows =
-        (data as Pick<TestimonialRow, "id" | "name" | "place" | "text" | "rating">[] | null) ?? [];
-      setTestimonials(rows.length ? rows : FALLBACK_TESTIMONIALS);
-    })();
-  }, []);
-
-  const [chickenProdCount, setChickenProdCount] = useState(10000);
-  const [batchRunCount, setBatchRunCount] = useState(50);
-
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from("site_settings")
-        .select("key, value")
-        .in("key", ["stat_consultations", "stat_farm_visits", "stat_training", "stat_chicken_production", "stat_batch_counts"]);
-
-      data?.forEach((row) => {
-        if (row.key === "stat_consultations" && row.value) setConsultCount(Number(row.value) || 507);
-        if (row.key === "stat_farm_visits" && row.value) setVisitCount(Number(row.value) || 203);
-        if (row.key === "stat_training" && row.value) setTrainingCount(Number(row.value) || 150);
-        if (row.key === "stat_chicken_production" && row.value) setChickenProdCount(Number(row.value) || 10000);
-        if (row.key === "stat_batch_counts" && row.value) setBatchRunCount(Number(row.value) || 50);
-      });
-    })();
   }, []);
 
   return (
@@ -247,44 +233,44 @@ function Index() {
               </a>
             </div>
 
-            <div className="mt-12 flex flex-wrap gap-8 text-sm">
+            <div className="mt-12 grid grid-cols-2 sm:flex sm:flex-wrap gap-x-8 gap-y-6 text-sm max-w-2xl bg-white/30 p-4 sm:p-5 rounded-3xl backdrop-blur-md border border-white/20">
               <div>
-                <div className="font-display text-2xl font-extrabold text-kp-green">
+                <div className="font-display text-xl sm:text-2xl font-extrabold text-kp-green">
                   {consultCount.toLocaleString("en-IN")}+
                 </div>
-                <div className="text-xs uppercase tracking-widest text-stone-500">
+                <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-stone-600">
                   Online Consultations
                 </div>
               </div>
               <div>
-                <div className="font-display text-2xl font-extrabold text-kp-red">
+                <div className="font-display text-xl sm:text-2xl font-extrabold text-kp-red">
                   {visitCount.toLocaleString("en-IN")}+
                 </div>
-                <div className="text-xs uppercase tracking-widest text-stone-500">
+                <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-stone-600">
                   Farm Visits
                 </div>
               </div>
               <div>
-                <div className="font-display text-2xl font-extrabold text-kp-gold">
+                <div className="font-display text-xl sm:text-2xl font-extrabold text-kp-gold">
                   {trainingCount.toLocaleString("en-IN")}+
                 </div>
-                <div className="text-xs uppercase tracking-widest text-stone-500">
+                <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-stone-600">
                   Training Programs
                 </div>
               </div>
               <div>
-                <div className="font-display text-2xl font-extrabold text-kp-green">
+                <div className="font-display text-xl sm:text-2xl font-extrabold text-kp-green">
                   {chickenProdCount.toLocaleString("en-IN")}+
                 </div>
-                <div className="text-xs uppercase tracking-widest text-stone-500">
+                <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-stone-600">
                   Total Chicken Production
                 </div>
               </div>
               <div>
-                <div className="font-display text-2xl font-extrabold text-kp-red">
+                <div className="font-display text-xl sm:text-2xl font-extrabold text-kp-red">
                   {batchRunCount.toLocaleString("en-IN")}+
                 </div>
-                <div className="text-xs uppercase tracking-widest text-stone-500">
+                <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-stone-600">
                   Successful Run Batches
                 </div>
               </div>

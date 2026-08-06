@@ -34,6 +34,7 @@ function Blog() {
     listBlogPosts().then((p) => {
       setPosts(p);
       setLoading(false);
+      window.dispatchEvent(new Event("page-data-loaded"));
     });
   }, []);
 
