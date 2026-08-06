@@ -500,3 +500,30 @@
     transition: none;
   }
 }
+
+/* Alternating slide-in for service cards */
+[data-slide-from="left"] {
+  opacity: 0;
+  transform: translateX(-80px) scale(0.96);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-slide-from="right"] {
+  opacity: 0;
+  transform: translateX(80px) scale(0.96);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-slide-from].is-visible {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-slide-from] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

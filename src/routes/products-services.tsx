@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PageShell, PageHero } from "@/components/site/page-shell";
 import { Play } from "lucide-react";
 import { getHomeVideoUrls, isVideoMediaUrl, type HomeVideoKey } from "@/lib/home-videos";
@@ -63,12 +63,43 @@ const SERVICES: {
 
 function ProductsServices() {
   const [videos, setVideos] = useState<Partial<Record<HomeVideoKey, string>>>({});
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     getHomeVideoUrls()
       .then(setVideos)
       .catch(() => {});
   }, []);
+
+  /* IntersectionObserver: animate cards when they scroll into view */
+  useEffect(() => {
+    const root = listRef.current;
+    if (!root) return;
+
+    const cards = root.querySelectorAll<HTMLElement>("[data-slide-from]");
+    if (!cards.length) return;
+
+    /* respect reduced-motion */
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      cards.forEach((c) => c.classList.add("is-visible"));
+      return;
+    }
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add("is-visible");
+            io.unobserve(e.target);
+          }
+        });
+      },
+      { threshold: 0.15 },
+    );
+
+    cards.forEach((c) => io.observe(c));
+    return () => io.disconnect();
+  }, [videos]); /* re-run once videos load so refs are stable */
 
   return (
     <PageShell>
@@ -79,14 +110,17 @@ function ProductsServices() {
         desc="Four simple services that cover your full farm journey. Each card has a short video to help you understand."
       />
 
-      <section className="px-6 py-16 md:px-10">
-        <div className="mx-auto max-w-6xl space-y-10">
+      <section className="overflow-hidden px-6 py-16 md:px-10">
+        <div ref={listRef} className="mx-auto max-w-6xl space-y-14">
           {SERVICES.map((s, i) => {
             const videoUrl = videos[s.videoKey];
+            const fromDir = i % 2 === 0 ? "right" : "left";
             return (
               <article
                 key={s.title}
-                className={`grid gap-8 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm transition hover:shadow-xl md:grid-cols-2 md:p-10 ${
+                data-slide-from={fromDir}
+                style={{ transitionDelay: `${i * 0.08}s` }}
+                className={`grid gap-8 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-xl md:grid-cols-2 md:p-10 ${
                   i % 2 ? "md:[&>div:first-child]:order-2" : ""
                 }`}
               >
