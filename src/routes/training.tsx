@@ -77,15 +77,28 @@ function Training() {
 
   const EVENT = programs.find((p) => p.id === selectedId) ?? programs[0];
 
+  const [bookingCounts, setBookingCounts] = useState<Record<string, number>>({});
+
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
+      const { data: progData } = await supabase
         .from("training_programs")
         .select("id,name,description,price,cohort_date,session_time,venue,seats,image_url")
         .eq("active", true)
         .order("cohort_date", { ascending: true });
+      
+      const { data: bookData } = await supabase
+        .from("training_bookings")
+        .select("program");
+
+      const counts: Record<string, number> = {};
+      ((bookData as { program: string | null }[]) ?? []).forEach((b) => {
+        if (b.program) counts[b.program] = (counts[b.program] || 0) + 1;
+      });
+      setBookingCounts(counts);
+
       // Batches whose date has already passed are not shown any more.
-      const list = ((data as Program[]) ?? []).filter(
+      const list = ((progData as Program[]) ?? []).filter(
         (p) => !p.cohort_date || p.cohort_date >= todayIso(),
       );
       setPrograms(list);
@@ -210,21 +223,40 @@ function Training() {
             <div className="grid gap-6">
               {programs.map((p) => {
                 const active = selectedId === p.id;
+                const totalSeats = p.seats ?? 20;
+                const booked = bookingCounts[p.name] ?? 0;
+                const available = Math.max(0, totalSeats - booked);
+                const isFull = available <= 0;
+
                 return (
                   <button
                     key={p.id}
                     type="button"
+                    disabled={isFull}
                     onClick={() => setSelectedId(p.id)}
                     className={`text-left rounded-3xl border p-6 shadow-sm transition sm:p-8 ${
-                      active
-                        ? "border-kp-green ring-2 ring-kp-green/30 bg-kp-green/5"
-                        : "border-stone-200 bg-white hover:border-kp-green/50"
+                      isFull
+                        ? "border-stone-200 bg-stone-100/70 opacity-60 cursor-not-allowed"
+                        : active
+                          ? "border-kp-green ring-2 ring-kp-green/30 bg-kp-green/5"
+                          : "border-stone-200 bg-white hover:border-kp-green/50"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <div className="text-xs font-bold uppercase tracking-widest text-kp-gold">
-                          Master Class
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold uppercase tracking-widest text-kp-gold">
+                            Master Class
+                          </span>
+                          {isFull ? (
+                            <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-red-600">
+                              Seats Full
+                            </span>
+                          ) : available <= 5 ? (
+                            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-amber-700 animate-pulse">
+                              🔥 Only {available} seats left!
+                            </span>
+                          ) : null}
                         </div>
                         <div className="mt-1 font-display text-xl font-extrabold sm:text-2xl">
                           {p.name}
@@ -249,11 +281,13 @@ function Training() {
                           <MapPin size={16} className="text-kp-green" /> {p.venue}
                         </div>
                       )}
-                      {p.seats != null && (
-                        <div className="flex items-center gap-2">
-                          <Users size={16} className="text-kp-green" /> {p.seats} seats
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <Users size={16} className={isFull ? "text-red-500" : "text-kp-green"} />{" "}
+                        <span className="font-semibold">
+                          {isFull ? "Full" : `${available} Available`}
+                        </span>{" "}
+                        <span className="text-stone-400">({booked}/{totalSeats} booked)</span>
+                      </div>
                     </div>
                   </button>
                 );

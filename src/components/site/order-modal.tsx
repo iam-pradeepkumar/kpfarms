@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, CheckCircle2, Loader2, ArrowLeft, ArrowRight, ShieldCheck, QrCode } from "lucide-react";
+import { X, CheckCircle2, Loader2, ArrowLeft, ArrowRight, ShoppingBag, MessageSquare } from "lucide-react";
 import { submitOrder, getAdminWhatsapp, buildOrderWhatsappText } from "@/lib/submissions";
 
 export type OrderItem = {
@@ -19,7 +19,6 @@ export function OrderModal({ item, onClose }: { item: OrderItem | null; onClose:
     email: "",
     address: "",
     quantity: 1,
-    paymentRef: "",
     notes: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -39,7 +38,7 @@ export function OrderModal({ item, onClose }: { item: OrderItem | null; onClose:
       setSubmitted(false);
       setErrors({});
       setWaUrl(null);
-      setForm({ name: "", phone: "", email: "", address: "", quantity: 1, paymentRef: "", notes: "" });
+      setForm({ name: "", phone: "", email: "", address: "", quantity: 1, notes: "" });
     }
   }, [item]);
 
@@ -76,7 +75,7 @@ export function OrderModal({ item, onClose }: { item: OrderItem | null; onClose:
   const validateStep2 = () => {
     const e: Record<string, string> = {};
     if (!form.address.trim() || form.address.trim().length < 5)
-      e.address = "Please enter a full delivery address";
+      e.address = "Please enter your full delivery address";
     if (form.quantity < 1 || form.quantity > 50) e.quantity = "1 to 50 only";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -98,13 +97,6 @@ export function OrderModal({ item, onClose }: { item: OrderItem | null; onClose:
     setSubmitting(true);
     setSubmitError(null);
 
-    const fullNotes = [
-      form.paymentRef.trim() ? `Payment Reference: ${form.paymentRef.trim()}` : "",
-      form.notes.trim(),
-    ]
-      .filter(Boolean)
-      .join("\n");
-
     const { error } = await submitOrder({
       product_id: item.id,
       quantity: form.quantity,
@@ -112,7 +104,7 @@ export function OrderModal({ item, onClose }: { item: OrderItem | null; onClose:
       whatsapp: form.phone.trim(),
       email: form.email.trim() || undefined,
       address: form.address.trim(),
-      notes: fullNotes || undefined,
+      notes: form.notes.trim() || undefined,
     });
     setSubmitting(false);
 
@@ -131,7 +123,7 @@ export function OrderModal({ item, onClose }: { item: OrderItem | null; onClose:
         phone: form.phone.trim(),
         email: form.email.trim() || undefined,
         address: form.address.trim(),
-        notes: fullNotes || undefined,
+        notes: form.notes.trim() || undefined,
       });
       const url = `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
       setWaUrl(url);
@@ -165,12 +157,12 @@ export function OrderModal({ item, onClose }: { item: OrderItem | null; onClose:
             <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-kp-green/10">
               <CheckCircle2 className="text-kp-green" size={36} />
             </div>
-            <h3 className="mb-2 font-display text-2xl font-extrabold">Order Submitted!</h3>
+            <h3 className="mb-2 font-display text-2xl font-extrabold">Order Placed!</h3>
             <p className="mb-6 text-sm text-stone-600">
-              Thanks {form.name.split(" ")[0]}! Your order for <b>{item.title}</b> is saved.
+              Thanks {form.name.split(" ")[0]}! Your order for <b>{item.title}</b> has been received.
               {waUrl
-                ? " Please press send in WhatsApp so we get your order right away."
-                : " We will message you on WhatsApp with confirmation."}
+                ? " Please press send in WhatsApp so we get your order details right away."
+                : " We will contact you on WhatsApp shortly."}
             </p>
             {waUrl && (
               <a
@@ -179,7 +171,7 @@ export function OrderModal({ item, onClose }: { item: OrderItem | null; onClose:
                 rel="noopener noreferrer"
                 className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-6 py-3.5 text-sm font-bold text-white shadow-md hover:opacity-90"
               >
-                Send Order on WhatsApp
+                <MessageSquare size={18} /> Send Details on WhatsApp
               </a>
             )}
             <button
@@ -210,7 +202,7 @@ export function OrderModal({ item, onClose }: { item: OrderItem | null; onClose:
               {[
                 { s: 1, label: "Your Info" },
                 { s: 2, label: "Address & Qty" },
-                { s: 3, label: "Payment Proof" },
+                { s: 3, label: "Confirm Order" },
               ].map(({ s, label }) => {
                 const active = step === s;
                 const done = step > s;
@@ -248,7 +240,7 @@ export function OrderModal({ item, onClose }: { item: OrderItem | null; onClose:
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     maxLength={100}
                     className="w-full rounded-xl border border-stone-200 px-4 py-3 text-sm focus:border-kp-green focus:outline-none"
-                    placeholder="Enter your name"
+                    placeholder="Enter your full name"
                     autoFocus
                   />
                 </Field>
@@ -313,13 +305,13 @@ export function OrderModal({ item, onClose }: { item: OrderItem | null; onClose:
                       className="w-full rounded-xl border border-stone-200 px-4 py-3 text-sm focus:border-kp-green focus:outline-none"
                     />
                   </Field>
-                  <Field label="Special Notes (Optional)">
+                  <Field label="Notes (Optional)">
                     <input
                       value={form.notes}
                       onChange={(e) => setForm({ ...form, notes: e.target.value })}
                       maxLength={300}
                       className="w-full rounded-xl border border-stone-200 px-4 py-3 text-sm focus:border-kp-green focus:outline-none"
-                      placeholder="Any instructions for us?"
+                      placeholder="Any notes for us?"
                     />
                   </Field>
                 </div>
@@ -336,52 +328,47 @@ export function OrderModal({ item, onClose }: { item: OrderItem | null; onClose:
                     type="submit"
                     className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-kp-green py-3.5 text-sm font-bold uppercase tracking-widest text-white shadow-md hover:opacity-90"
                   >
-                    <span>Next: Payment Details</span>
+                    <span>Next: Confirm Order</span>
                     <ArrowRight size={16} />
                   </button>
                 </div>
               </form>
             )}
 
-            {/* STEP 3: Payment & Proof Submission */}
+            {/* STEP 3: Order Summary & WhatsApp Direct Order (No payment proof) */}
             {step === 3 && (
               <form onSubmit={submit} className="space-y-4">
-                {/* Total Price Card */}
-                <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4 text-center">
-                  <div className="text-xs font-bold uppercase tracking-widest text-stone-500">
-                    Total Amount Payable
+                {/* Summary Box */}
+                <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                  <div className="mb-2 text-xs font-bold uppercase tracking-widest text-kp-green">
+                    Order Summary
                   </div>
-                  <div className="my-1 font-display text-3xl font-extrabold text-kp-green">
-                    ₹{total}
+                  <div className="flex items-center justify-between text-sm font-bold text-stone-900">
+                    <span>{item.title}</span>
+                    <span className="text-kp-green">₹{total}</span>
                   </div>
-                  <div className="text-xs text-stone-500">
-                    {form.quantity} x {item.title} (₹{item.price} each)
+                  <div className="mt-1 text-xs text-stone-500">
+                    Quantity: {form.quantity} · Price: ₹{item.price} each
                   </div>
                 </div>
 
-                {/* Payment Instructions Box */}
-                <div className="rounded-2xl border border-dashed border-kp-green/40 bg-kp-green/5 p-4">
-                  <div className="mb-2 flex items-center gap-2 font-display text-xs font-bold uppercase tracking-widest text-kp-green">
-                    <QrCode size={16} /> Pay via UPI / GPay / PhonePe
+                {/* Customer Details Box */}
+                <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4 space-y-1.5 text-xs text-stone-600">
+                  <div className="font-bold text-stone-900 uppercase text-[10px] tracking-widest mb-1 text-stone-500">
+                    Customer & Delivery Info
                   </div>
-                  <p className="text-xs leading-relaxed text-stone-600">
-                    Pay <b>₹{total}</b> to <b>kpfarms@upi</b> or scan the payment QR code during confirmation. Enter your transaction ID / UTR reference below:
-                  </p>
+                  <div><b>Name:</b> {form.name}</div>
+                  <div><b>WhatsApp:</b> {form.phone}</div>
+                  {form.email && <div><b>Email:</b> {form.email}</div>}
+                  <div><b>Address:</b> {form.address}</div>
                 </div>
 
-                <Field label="Transaction Ref / UTR Number (Optional)">
-                  <input
-                    value={form.paymentRef}
-                    onChange={(e) => setForm({ ...form, paymentRef: e.target.value })}
-                    maxLength={100}
-                    className="w-full rounded-xl border border-stone-200 px-4 py-3 text-sm focus:border-kp-green focus:outline-none"
-                    placeholder="Enter UPI Ref / UTR number if paid"
-                  />
-                </Field>
-
-                <div className="flex items-center gap-2 rounded-xl bg-stone-100 p-3 text-[11px] text-stone-600">
-                  <ShieldCheck size={16} className="shrink-0 text-kp-green" />
-                  We will also send your complete order summary and payment link on WhatsApp.
+                {/* WhatsApp Notice Box */}
+                <div className="flex items-start gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-800">
+                  <MessageSquare size={18} className="shrink-0 text-[#25D366] mt-0.5" />
+                  <div>
+                    <b>Direct WhatsApp Order:</b> Clicking submit will save your order and open WhatsApp to send your order details directly to KP Farm Ventures.
+                  </div>
                 </div>
 
                 {submitError && (
@@ -401,10 +388,14 @@ export function OrderModal({ item, onClose }: { item: OrderItem | null; onClose:
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-kp-green py-3.5 text-sm font-bold uppercase tracking-widest text-white shadow-md hover:opacity-90 disabled:opacity-60"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#25D366] py-3.5 text-sm font-bold uppercase tracking-widest text-white shadow-md hover:opacity-90 disabled:opacity-60"
                   >
-                    {submitting && <Loader2 className="size-4 animate-spin" />}
-                    {submitting ? "Submitting Order…" : "Submit Order Request"}
+                    {submitting ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <MessageSquare size={16} />
+                    )}
+                    {submitting ? "Sending Order…" : "Send Order to WhatsApp"}
                   </button>
                 </div>
               </form>

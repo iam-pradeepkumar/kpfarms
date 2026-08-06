@@ -373,10 +373,9 @@ function Index() {
                 <Link
                   key={`${s.n}-${idx}`}
                   to="/products-services"
-                  className="group/card flex w-[420px] sm:w-[520px] shrink-0 flex-row items-stretch overflow-hidden rounded-3xl border border-stone-200 bg-stone-50 transition-all hover:-translate-y-1.5 hover:border-kp-green hover:bg-white hover:shadow-xl"
+                  className="group/card flex w-[300px] sm:w-[360px] shrink-0 flex-col overflow-hidden rounded-3xl border border-stone-200 bg-stone-50 p-5 transition-all hover:-translate-y-1.5 hover:border-kp-green hover:bg-white hover:shadow-xl"
                 >
-                  {/* Video / media — left side */}
-                  <div className="relative w-[45%] shrink-0 overflow-hidden bg-stone-100">
+                  <div className="relative mb-4 aspect-video w-full overflow-hidden rounded-2xl bg-stone-100">
                     {videoUrl ? (
                       isVideoMediaUrl(videoUrl) ? (
                         <video
@@ -393,34 +392,33 @@ function Index() {
                       )
                     ) : (
                       <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-kp-green/10 via-kp-gold/10 to-kp-red/10 text-kp-green">
-                        <div className="flex size-10 items-center justify-center rounded-full bg-white shadow-md">
-                          <Play className="ml-0.5 text-kp-green" size={16} />
+                        <div className="flex size-12 items-center justify-center rounded-full bg-white shadow-md">
+                          <Play className="ml-1 text-kp-green" size={20} />
                         </div>
-                        <div className="text-[9px] font-bold uppercase tracking-widest">
-                          Video soon
+                        <div className="text-[10px] font-bold uppercase tracking-widest">
+                          Video coming soon
                         </div>
                       </div>
                     )}
                   </div>
-                  {/* Text — right side */}
-                  <div className="flex flex-1 flex-col justify-between p-5">
+                  <div className="flex flex-1 flex-col justify-between">
                     <div>
                       <div className="mb-2 flex items-center justify-between">
                         <span className={`font-display text-xs font-extrabold ${s.color}`}>
                           Service · {s.n}
                         </span>
                         <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 group-hover/card:text-kp-green">
-                          View →
+                          View Service →
                         </span>
                       </div>
-                      <h3 className="mb-2 font-display text-sm font-bold leading-snug text-stone-900 line-clamp-2 sm:text-base">
+                      <h3 className="mb-2 font-display text-base font-bold text-stone-900 line-clamp-2">
                         {s.title}
                       </h3>
-                      <p className="text-[11px] leading-relaxed text-stone-500 line-clamp-3 sm:text-xs">
+                      <p className="text-xs leading-relaxed text-stone-500 line-clamp-3">
                         {s.desc}
                       </p>
                     </div>
-                    <div className="mt-3 border-t border-stone-200/60 pt-2.5 flex items-center justify-between text-xs font-bold text-kp-green">
+                    <div className="mt-4 border-t border-stone-200/60 pt-3 flex items-center justify-between text-xs font-bold text-kp-green">
                       <span>Learn More</span>
                       <span>→</span>
                     </div>

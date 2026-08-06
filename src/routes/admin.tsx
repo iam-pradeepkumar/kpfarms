@@ -1161,6 +1161,7 @@ function TrainingProgramsTab() {
   const [bookingsByProgram, setBookingsByProgram] = useState<Record<string, TrainingBooking[]>>({});
   const [bookingsLoading, setBookingsLoading] = useState<string | null>(null);
   const [orphans, setOrphans] = useState<TrainingBooking[]>([]);
+  const [allBookingsList, setAllBookingsList] = useState<TrainingBooking[]>([]);
 
   const load = async () => {
     setLoading(true);
@@ -1171,16 +1172,14 @@ function TrainingProgramsTab() {
     const programs = error ? [] : ((data as TrainingProgram[]) ?? []);
     if (!error) setRows(programs);
 
-    // Signups whose program was deleted or renamed would otherwise be invisible
-    // even though they are counted on the Overview tiles.
     const names = new Set(programs.map((p) => p.name));
     const { data: allBookings } = await supabase
       .from("training_bookings")
       .select("*")
       .order("created_at", { ascending: false });
-    setOrphans(
-      ((allBookings as TrainingBooking[]) ?? []).filter((b) => !b.program || !names.has(b.program)),
-    );
+    const bookingsList = ((allBookings as TrainingBooking[]) ?? []);
+    setAllBookingsList(bookingsList);
+    setOrphans(bookingsList.filter((b) => !b.program || !names.has(b.program)));
     setLoading(false);
   };
 
@@ -1283,6 +1282,10 @@ function TrainingProgramsTab() {
           {rows.map((p) => {
             const expanded = expandedId === p.id;
             const bookings = bookingsByProgram[p.id] ?? [];
+            const bookedCount = allBookingsList.filter((b) => b.program === p.name).length;
+            const totalSeats = p.seats ?? 20;
+            const remaining = Math.max(0, totalSeats - bookedCount);
+
             return (
               <div
                 key={p.id}
@@ -1318,7 +1321,11 @@ function TrainingProgramsTab() {
                         <b className="text-stone-700">{p.price != null ? `₹${p.price}` : "—"}</b>
                       </span>
                       <span>
-                        Seats: <b className="text-stone-700">{p.seats ?? "—"}</b>
+                        Seats: <b className="text-stone-700">{totalSeats} Total</b> ·{" "}
+                        <b className="text-kp-green">{bookedCount} Registered</b> ·{" "}
+                        <b className={remaining > 0 ? "text-kp-gold font-bold" : "text-kp-red font-bold"}>
+                          {remaining} Remaining
+                        </b>
                       </span>
                     </div>
                   </div>
