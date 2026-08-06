@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { PageShell, PageHero } from "@/components/site/page-shell";
 import { Play } from "lucide-react";
-import { getHomeVideoUrls, type HomeVideoKey } from "@/lib/home-videos";
+import { getHomeVideoUrls, isVideoMediaUrl, type HomeVideoKey } from "@/lib/home-videos";
 
 export const Route = createFileRoute("/products-services")({
   head: () => ({
@@ -92,7 +92,7 @@ function ProductsServices() {
               >
                 <div className="flex aspect-video items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-kp-green/10 via-kp-gold/10 to-kp-red/10">
                   {videoUrl ? (
-                    /\.(mp4|webm|mov|avi|mkv)$/i.test(videoUrl) ? (
+                    isVideoMediaUrl(videoUrl) ? (
                       <video
                         src={videoUrl}
                         controls

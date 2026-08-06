@@ -52,6 +52,7 @@ import {
   getHomeVideoUrls,
   uploadHomeVideo,
   removeHomeVideo,
+  isVideoMediaUrl,
   type HomeVideoKey,
 } from "@/lib/home-videos";
 
@@ -2712,7 +2713,7 @@ function HomeVideosCard() {
                 </div>
                 <div className="mb-3 aspect-video w-full overflow-hidden rounded-xl bg-stone-100">
                   {url ? (
-                    /\.(mp4|webm|mov|avi|mkv)$/i.test(url) ? (
+                    isVideoMediaUrl(url) ? (
                       <video
                         src={url}
                         controls

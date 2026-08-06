@@ -25,6 +25,14 @@ export const HOME_VIDEOS: { key: HomeVideoKey; label: string }[] = [
 
 const BUCKET = "site-assets";
 
+/** Returns true if URL is a video (mp4, webm, mov, etc.), ignoring query string tokens. */
+export function isVideoMediaUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  const clean = url.split("?")[0].split("#")[0].toLowerCase();
+  if (/\.(png|jpe?g|webp|gif|svg|avif)$/i.test(clean)) return false;
+  return /\.(mp4|webm|mov|avi|mkv|ogv|m4v)$/i.test(clean) || clean.includes("video");
+}
+
 async function signed(path: string | null): Promise<string | null> {
   if (!path) return null;
   if (/^https?:\/\//i.test(path)) return path;

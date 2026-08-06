@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { Play } from "lucide-react";
 
 import { Chick, Hen, Feather } from "@/components/site/decor";
 import { FounderCarousel } from "@/components/site/founder-carousel";
@@ -8,7 +9,7 @@ import { PageShell } from "@/components/site/page-shell";
 
 import { supabase } from "@/integrations/supabase/client";
 import type { TestimonialRow } from "@/lib/submissions";
-import { getHomeVideoUrls, type HomeVideoKey } from "@/lib/home-videos";
+import { getHomeVideoUrls, isVideoMediaUrl, type HomeVideoKey } from "@/lib/home-videos";
 
 import founderFamily from "@/assets/founder-family.jpg.asset.json";
 import founderFormal from "@/assets/founder-formal.png.asset.json";
@@ -241,9 +242,9 @@ function Index() {
       </header>
 
       {/* Services */}
-      <section id="services" className="relative bg-white px-6 py-16 md:px-10 md:py-20">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-12 flex flex-wrap items-end justify-between gap-6">
+      <section id="services" className="relative overflow-hidden bg-white px-6 py-16 md:px-10 md:py-20">
+        <div className="mx-auto max-w-6xl mb-8">
+          <div className="flex flex-wrap items-end justify-between gap-6">
             <div className="max-w-xl">
               <div className="mb-3 text-xs font-bold uppercase tracking-widest text-kp-green">
                 What we do
@@ -252,41 +253,178 @@ function Index() {
                 What We Offer
               </h2>
               <p className="text-stone-500">
-                Simple help for every step of your poultry farm — from your first chicks to a big
-                commercial farm.
+                Simple help for every step of your poultry farm — scroll through our services below and click any card to view full details.
               </p>
             </div>
-            <div className="hidden md:block">
+            <div className="hidden md:flex items-center gap-3">
+              <Link
+                to="/products-services"
+                className="inline-flex items-center gap-2 rounded-full border border-kp-green bg-kp-green/10 px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-kp-green transition-colors hover:bg-kp-green hover:text-white"
+              >
+                View All Services →
+              </Link>
               <Chick size={56} delay={0.2} />
             </div>
           </div>
+        </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+        {/* Auto-scrolling horizontal Services Marquee */}
+        <div className="marquee-mask group relative overflow-hidden py-4">
+          <div className="flex w-max gap-6 animate-[marquee-x_35s_linear_infinite] group-hover:[animation-play-state:paused]">
             {[
-              { n: "01", color: "text-kp-green", bg: "bg-kp-green/10", title: "Poultry Farm Advice and Consultation", desc: "Get expert guidance on starting, running and growing your poultry farm — online or in person.", to: "/consultation" },
-              { n: "02", color: "text-kp-red",   bg: "bg-kp-red/10",   title: "Invite for the Farm Visit to Explore Real Experience", desc: "We invite you to our farm to see real shed setup, feeding, water, safety and day-to-day management firsthand.", to: "/farm-visit" },
-              { n: "03", color: "text-kp-gold",  bg: "bg-kp-gold/10",  title: "Construction and Shed Design Plan", desc: "Get a professional shed design plan tailored to your land, flock size and budget.", to: "/consultation" },
-              { n: "04", color: "text-kp-green", bg: "bg-kp-green/10", title: "Construction and Shed Making Quotation", desc: "We provide a detailed cost quotation for building your poultry shed — no hidden charges.", to: "/consultation" },
-            ].map((s) => (
-              <Link
-                key={s.n}
-                to={s.to as "/consultation" | "/farm-visit"}
-                data-reveal
-                className="group flex items-start gap-4 rounded-2xl border border-stone-100 bg-stone-50 p-5 transition-all hover:-translate-y-1 hover:border-kp-green/40 hover:shadow-lg"
-              >
-                <div className={`mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl ${s.bg}`}>
-                  <span className={`font-display text-xs font-extrabold ${s.color}`}>{s.n}</span>
-                </div>
-                <div>
-                  <h3 className="mb-1 font-display text-base font-bold text-stone-900">{s.title}</h3>
-                  <p className="text-sm text-stone-500">{s.desc}</p>
-                  <span className={`mt-2 inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest transition-all group-hover:gap-2 ${s.color}`}>
-                    Learn More →
-                  </span>
-                </div>
-              </Link>
-            ))}
+              {
+                n: "01",
+                color: "text-kp-green",
+                title: "Poultry Farm Advice and Consultation",
+                desc: "Get expert guidance on starting, running and growing your poultry farm — online or in person.",
+                videoKey: "service_video_advice" as const,
+              },
+              {
+                n: "02",
+                color: "text-kp-red",
+                title: "Invite for the Farm Visit to Explore Real Experience",
+                desc: "We invite you to our farm to see real shed setup, feeding, water, safety and day-to-day management firsthand.",
+                videoKey: "service_video_farm_visit" as const,
+              },
+              {
+                n: "03",
+                color: "text-kp-gold",
+                title: "Construction and Shed Design Plan",
+                desc: "Get a professional shed design plan tailored to your land, flock size and budget.",
+                videoKey: "service_video_shed_plan" as const,
+              },
+              {
+                n: "04",
+                color: "text-kp-green",
+                title: "Construction and Shed Making Quotation",
+                desc: "We provide a detailed cost quotation for building your poultry shed — no hidden charges.",
+                videoKey: "service_video_shed_quote" as const,
+              },
+              {
+                n: "01",
+                color: "text-kp-green",
+                title: "Poultry Farm Advice and Consultation",
+                desc: "Get expert guidance on starting, running and growing your poultry farm — online or in person.",
+                videoKey: "service_video_advice" as const,
+              },
+              {
+                n: "02",
+                color: "text-kp-red",
+                title: "Invite for the Farm Visit to Explore Real Experience",
+                desc: "We invite you to our farm to see real shed setup, feeding, water, safety and day-to-day management firsthand.",
+                videoKey: "service_video_farm_visit" as const,
+              },
+              {
+                n: "03",
+                color: "text-kp-gold",
+                title: "Construction and Shed Design Plan",
+                desc: "Get a professional shed design plan tailored to your land, flock size and budget.",
+                videoKey: "service_video_shed_plan" as const,
+              },
+              {
+                n: "04",
+                color: "text-kp-green",
+                title: "Construction and Shed Making Quotation",
+                desc: "We provide a detailed cost quotation for building your poultry shed — no hidden charges.",
+                videoKey: "service_video_shed_quote" as const,
+              },
+              {
+                n: "01",
+                color: "text-kp-green",
+                title: "Poultry Farm Advice and Consultation",
+                desc: "Get expert guidance on starting, running and growing your poultry farm — online or in person.",
+                videoKey: "service_video_advice" as const,
+              },
+              {
+                n: "02",
+                color: "text-kp-red",
+                title: "Invite for the Farm Visit to Explore Real Experience",
+                desc: "We invite you to our farm to see real shed setup, feeding, water, safety and day-to-day management firsthand.",
+                videoKey: "service_video_farm_visit" as const,
+              },
+              {
+                n: "03",
+                color: "text-kp-gold",
+                title: "Construction and Shed Design Plan",
+                desc: "Get a professional shed design plan tailored to your land, flock size and budget.",
+                videoKey: "service_video_shed_plan" as const,
+              },
+              {
+                n: "04",
+                color: "text-kp-green",
+                title: "Construction and Shed Making Quotation",
+                desc: "We provide a detailed cost quotation for building your poultry shed — no hidden charges.",
+                videoKey: "service_video_shed_quote" as const,
+              },
+            ].map((s, idx) => {
+              const videoUrl = videos[s.videoKey];
+              return (
+                <Link
+                  key={`${s.n}-${idx}`}
+                  to="/products-services"
+                  className="group/card flex w-[300px] sm:w-[360px] shrink-0 flex-col overflow-hidden rounded-3xl border border-stone-200 bg-stone-50 p-5 transition-all hover:-translate-y-1.5 hover:border-kp-green hover:bg-white hover:shadow-xl"
+                >
+                  <div className="relative mb-4 aspect-video w-full overflow-hidden rounded-2xl bg-stone-100">
+                    {videoUrl ? (
+                      isVideoMediaUrl(videoUrl) ? (
+                        <video
+                          src={videoUrl}
+                          autoPlay
+                          muted
+                          loop
+                          playsInline
+                          preload="metadata"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <img src={videoUrl} alt={s.title} className="h-full w-full object-cover" />
+                      )
+                    ) : (
+                      <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-kp-green/10 via-kp-gold/10 to-kp-red/10 text-kp-green">
+                        <div className="flex size-12 items-center justify-center rounded-full bg-white shadow-md">
+                          <Play className="ml-1 text-kp-green" size={20} />
+                        </div>
+                        <div className="text-[10px] font-bold uppercase tracking-widest">
+                          Video coming soon
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-1 flex-col justify-between">
+                    <div>
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className={`font-display text-xs font-extrabold ${s.color}`}>
+                          Service · {s.n}
+                        </span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 group-hover/card:text-kp-green">
+                          View Service →
+                        </span>
+                      </div>
+                      <h3 className="mb-2 font-display text-base font-bold text-stone-900 line-clamp-2">
+                        {s.title}
+                      </h3>
+                      <p className="text-xs leading-relaxed text-stone-500 line-clamp-3">
+                        {s.desc}
+                      </p>
+                    </div>
+                    <div className="mt-4 border-t border-stone-200/60 pt-3 flex items-center justify-between text-xs font-bold text-kp-green">
+                      <span>Learn More</span>
+                      <span>→</span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
+        </div>
+
+        <div className="mt-6 text-center md:hidden">
+          <Link
+            to="/products-services"
+            className="inline-flex items-center gap-2 rounded-full border border-kp-green bg-kp-green/10 px-6 py-3 text-xs font-bold uppercase tracking-widest text-kp-green"
+          >
+            View All Services →
+          </Link>
         </div>
       </section>
 
@@ -747,17 +885,21 @@ function VideoSlot({
   return (
     <div className={`relative mb-5 aspect-video w-full overflow-hidden rounded-2xl ring-1 ${ring}`}>
       {src ? (
-        <video
-          src={src}
-          autoPlay
-          muted
-          loop
-          controls
-          playsInline
-          preload="auto"
-          className="h-full w-full object-cover"
-          aria-label={label}
-        />
+        isVideoMediaUrl(src) ? (
+          <video
+            src={src}
+            autoPlay
+            muted
+            loop
+            controls
+            playsInline
+            preload="auto"
+            className="h-full w-full object-cover"
+            aria-label={label}
+          />
+        ) : (
+          <img src={src} alt={label} className="h-full w-full object-cover" />
+        )
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-white/60 to-transparent">
           <div className="flex size-12 items-center justify-center rounded-full bg-white shadow-md">
