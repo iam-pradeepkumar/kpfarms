@@ -2337,8 +2337,16 @@ function BookingActions({
             }.`
           : "Event created, but Google did not return a Meet link.",
       );
-    } catch (e) {
-      setScheduleMsg(e instanceof Error ? e.message : "Could not schedule the meeting.");
+    } catch (e: unknown) {
+      let msg = "Could not schedule the meeting.";
+      if (e instanceof Error) {
+        msg = e.message;
+      } else if (typeof e === "object" && e !== null) {
+        // TanStack server function errors may be wrapped
+        const obj = e as Record<string, unknown>;
+        msg = String(obj.message ?? obj.statusMessage ?? obj.data ?? JSON.stringify(e));
+      }
+      setScheduleMsg(msg);
     } finally {
       setScheduling(false);
     }
