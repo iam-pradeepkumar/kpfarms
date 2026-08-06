@@ -5,14 +5,22 @@ export type HomeVideoKey =
   | "home_video_poultry"
   | "home_video_meeting"
   | "home_video_farm_visit"
-  | "home_video_training";
+  | "home_video_training"
+  | "service_video_advice"
+  | "service_video_farm_visit"
+  | "service_video_shed_plan"
+  | "service_video_shed_quote";
 
 export const HOME_VIDEOS: { key: HomeVideoKey; label: string }[] = [
-  { key: "home_video_digital", label: "Digital Products preview" },
-  { key: "home_video_poultry", label: "Poultry Products preview" },
+  { key: "service_video_advice", label: "Service 1: Poultry Farm Advice preview" },
+  { key: "service_video_farm_visit", label: "Service 2: Farm Visit preview" },
+  { key: "service_video_shed_plan", label: "Service 3: Shed Design Plan preview" },
+  { key: "service_video_shed_quote", label: "Service 4: Shed Quotation preview" },
   { key: "home_video_meeting", label: "Online meeting preview" },
   { key: "home_video_farm_visit", label: "Farm Visit preview" },
   { key: "home_video_training", label: "Training Programs preview" },
+  { key: "home_video_digital", label: "Digital Products preview" },
+  { key: "home_video_poultry", label: "Poultry Products preview" },
 ];
 
 const BUCKET = "site-assets";
