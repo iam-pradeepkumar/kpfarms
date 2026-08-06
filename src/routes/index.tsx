@@ -154,11 +154,11 @@ function Index() {
           src="/media/hero-farm-bg.png"
           alt=""
           aria-hidden
-          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right"
         />
-        {/* Gradient overlay for text legibility */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white via-white/95 to-white/40" />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/80 via-transparent to-white/90" />
+        {/* Strong gradient overlays — keep text area clean, farm only peeks on far right */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white via-white to-white/60" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/90 via-white/70 to-white" />
 
         {/* Floating hero decor */}
         <Chick
