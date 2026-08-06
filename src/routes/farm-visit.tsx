@@ -229,13 +229,13 @@ function FarmVisit() {
                   />
                 </div>
                 {errMsg && <ErrorBox>{errMsg}</ErrorBox>}
-                <div className="sm:col-span-2 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="sm:col-span-2 grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setStep(1)}
-                    className="rounded-xl border border-stone-200 bg-white px-5 py-3.5 text-xs font-bold uppercase tracking-widest text-stone-700 hover:bg-stone-50 transition-colors"
+                    className="w-full rounded-xl border border-stone-200 bg-white py-3.5 text-xs font-bold uppercase tracking-widest text-stone-700 hover:bg-stone-50 transition-colors"
                   >
-                    ← Back to Step 1
+                    ← Back
                   </button>
                   <PrimaryBtn loading={loading}>Confirm Slot</PrimaryBtn>
                 </div>

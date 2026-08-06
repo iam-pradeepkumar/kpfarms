@@ -63,6 +63,9 @@ function Index() {
   >([]);
   const [videos, setVideos] = useState<Partial<Record<HomeVideoKey, string>>>({});
   const [trainedCount, setTrainedCount] = useState(500);
+  const [consultCount, setConsultCount] = useState(500);
+  const [visitCount, setVisitCount] = useState(200);
+  const [trainingCount, setTrainingCount] = useState(150);
 
   useEffect(() => {
     getHomeVideoUrls()
@@ -76,6 +79,30 @@ function Index() {
       const { data, error } = await supabase.rpc("trained_farmers_count" as never);
       const n = Number(data);
       if (!error && Number.isFinite(n) && n > 0) setTrainedCount(n);
+    })();
+  }, []);
+
+  // Live animated counters
+  useEffect(() => {
+    (async () => {
+      const [c1, c2, c3] = await Promise.all([
+        supabase.from("consultation_bookings" as never).select("id", { count: "exact", head: true }),
+        supabase.from("farm_visit_bookings" as never).select("id", { count: "exact", head: true }),
+        supabase.from("training_registrations" as never).select("id", { count: "exact", head: true }),
+      ]);
+      const animate = (base: number, extra: number, setter: (n: number) => void) => {
+        const target = base + (extra || 0);
+        let current = base;
+        const step = Math.ceil((target - base) / 30);
+        const id = setInterval(() => {
+          current = Math.min(current + step, target);
+          setter(current);
+          if (current >= target) clearInterval(id);
+        }, 40);
+      };
+      animate(500, (c1 as { count: number | null }).count ?? 0, setConsultCount);
+      animate(200, (c2 as { count: number | null }).count ?? 0, setVisitCount);
+      animate(150, (c3 as { count: number | null }).count ?? 0, setTrainingCount);
     })();
   }, []);
 
@@ -186,22 +213,26 @@ function Index() {
             <div className="mt-12 flex flex-wrap gap-8 text-sm">
               <div>
                 <div className="font-display text-2xl font-extrabold text-kp-green">
-                  {trainedCount.toLocaleString("en-IN")}+
+                  {consultCount.toLocaleString("en-IN")}+
                 </div>
                 <div className="text-xs uppercase tracking-widest text-stone-500">
-                  Farmers Trained
-                </div>
-              </div>
-              <div>
-                <div className="font-display text-2xl font-extrabold text-kp-red">98%</div>
-                <div className="text-xs uppercase tracking-widest text-stone-500">
-                  Happy Farmers
+                  Online Consultations
                 </div>
               </div>
               <div>
-                <div className="font-display text-2xl font-extrabold text-kp-gold">10k+</div>
+                <div className="font-display text-2xl font-extrabold text-kp-red">
+                  {visitCount.toLocaleString("en-IN")}+
+                </div>
                 <div className="text-xs uppercase tracking-widest text-stone-500">
-                  Healthy Chicks
+                  Farm Visits
+                </div>
+              </div>
+              <div>
+                <div className="font-display text-2xl font-extrabold text-kp-gold">
+                  {trainingCount.toLocaleString("en-IN")}+
+                </div>
+                <div className="text-xs uppercase tracking-widest text-stone-500">
+                  Training Programs
                 </div>
               </div>
             </div>
@@ -230,31 +261,31 @@ function Index() {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <ServiceCard
-              index="01"
-              color="green"
-              title="Meeting & Farm Visit"
-              desc="Talk to our expert on video, or come see our farm and learn on the spot."
-              cta="Book Now"
-              to="/consultation"
-            />
-            <ServiceCard
-              index="02"
-              color="gold"
-              title="Products"
-              desc="E-books, easy Excel sheets, and trusted farm equipment we use every day."
-              cta="Shop Now"
-              hash="products"
-            />
-            <ServiceCard
-              index="03"
-              color="red"
-              title="Training Programs"
-              desc="Learn poultry farming on our farm — chick care, feed, and how to sell."
-              cta="Join Now"
-              to="/training"
-            />
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[
+              { n: "01", color: "text-kp-green", bg: "bg-kp-green/10", title: "Poultry Farm Advice & Consultation", desc: "Get expert guidance on starting, running and growing your poultry farm — online or in person.", to: "/consultation" },
+              { n: "02", color: "text-kp-red", bg: "bg-kp-red/10", title: "Farm Visit — Real Experience", desc: "We invite you to our farm to see real shed setup, feeding, safety and management firsthand.", to: "/farm-visit" },
+              { n: "03", color: "text-kp-gold", bg: "bg-kp-gold/10", title: "Construction & Shed Design Plan", desc: "Get a professional shed design plan tailored to your land, flock size and budget.", to: "/consultation" },
+              { n: "04", color: "text-kp-green", bg: "bg-kp-green/10", title: "Shed Making Quotation", desc: "We provide a detailed cost quotation for building your poultry shed — no hidden charges.", to: "/consultation" },
+            ].map((s) => (
+              <Link
+                key={s.n}
+                to={s.to as "/consultation" | "/farm-visit"}
+                data-reveal
+                className="group flex items-start gap-4 rounded-2xl border border-stone-100 bg-stone-50 p-5 transition-all hover:-translate-y-1 hover:border-kp-green/40 hover:shadow-lg"
+              >
+                <div className={`mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl ${s.bg}`}>
+                  <span className={`font-display text-xs font-extrabold ${s.color}`}>{s.n}</span>
+                </div>
+                <div>
+                  <h3 className="mb-1 font-display text-base font-bold text-stone-900">{s.title}</h3>
+                  <p className="text-sm text-stone-500">{s.desc}</p>
+                  <span className={`mt-2 inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest transition-all group-hover:gap-2 ${s.color}`}>
+                    Learn More →
+                  </span>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </section>

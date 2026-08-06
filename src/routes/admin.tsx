@@ -2704,16 +2704,20 @@ function HomeVideosCard() {
                 </div>
                 <div className="mb-3 aspect-video w-full overflow-hidden rounded-xl bg-stone-100">
                   {url ? (
-                    <video
-                      src={url}
-                      controls
-                      playsInline
-                      preload="metadata"
-                      className="h-full w-full object-cover"
-                    />
+                    /\.(mp4|webm|mov|avi|mkv)$/i.test(url) ? (
+                      <video
+                        src={url}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <img src={url} alt={v.label} className="h-full w-full object-cover" />
+                    )
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-[11px] text-stone-500">
-                      No video yet
+                      No media yet
                     </div>
                   )}
                 </div>
@@ -2724,6 +2728,20 @@ function HomeVideosCard() {
                     <input
                       type="file"
                       accept="video/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        e.target.value = "";
+                        if (f) pick(v.key, f);
+                      }}
+                    />
+                  </label>
+                  <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-kp-gold px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-white hover:opacity-90">
+                    {busy === v.key && <Loader2 className="size-3.5 animate-spin" />}
+                    Upload image
+                    <input
+                      type="file"
+                      accept="image/*"
                       className="hidden"
                       onChange={(e) => {
                         const f = e.target.files?.[0];
@@ -3258,15 +3276,18 @@ function BlogEditor({
               <img
                 src={coverPreview}
                 alt="Cover"
-                className="mb-2 max-h-52 w-full rounded-xl object-cover"
+                className="mb-3 max-h-52 w-full rounded-xl object-cover"
               />
             )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => onFile(e.target.files?.[0], "cover_url")}
-              className="w-full text-xs"
-            />
+            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-3 text-xs font-bold uppercase tracking-widest text-stone-600 hover:border-kp-green hover:text-kp-green transition-colors">
+              <span>📷 {coverPreview ? "Change cover photo" : "Upload cover photo"}</span>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => onFile(e.target.files?.[0], "cover_url")}
+              />
+            </label>
           </div>
 
           <div>
