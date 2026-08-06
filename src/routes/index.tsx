@@ -6,6 +6,8 @@ import { Chick, Hen, Feather } from "@/components/site/decor";
 import { FounderCarousel } from "@/components/site/founder-carousel";
 import { MessageCard } from "@/components/site/message-card";
 import { PageShell } from "@/components/site/page-shell";
+import { listBlogPosts, type BlogPost } from "@/lib/blog";
+import { PostCard, PostModal } from "@/routes/blog";
 
 import { supabase } from "@/integrations/supabase/client";
 import type { TestimonialRow } from "@/lib/submissions";
@@ -68,6 +70,14 @@ function Index() {
   const [consultCount, setConsultCount] = useState(500);
   const [visitCount, setVisitCount] = useState(200);
   const [trainingCount, setTrainingCount] = useState(150);
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [openPost, setOpenPost] = useState<BlogPost | null>(null);
+
+  useEffect(() => {
+    listBlogPosts().then((p) => {
+      setPosts(p.slice(0, 3));
+    });
+  }, []);
 
   useEffect(() => {
     getHomeVideoUrls()
@@ -660,6 +670,36 @@ function Index() {
       {/* Send us a message */}
       <MessageCard />
 
+      {/* Blog & Articles */}
+      {posts.length > 0 && (
+        <section className="relative bg-white px-6 py-16 md:px-10 md:py-20 border-b border-stone-100">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-10 flex flex-wrap items-end justify-between gap-6">
+              <div>
+                <div className="mb-3 text-xs font-bold uppercase tracking-widest text-kp-green">
+                  Blog &amp; Articles
+                </div>
+                <h2 className="font-display text-4xl font-extrabold md:text-5xl">
+                  Poultry Tips &amp; Guides
+                </h2>
+              </div>
+              <Link
+                to="/blog"
+                className="inline-flex items-center gap-2 rounded-xl border border-stone-200 bg-white px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-stone-700 hover:border-kp-green hover:text-kp-green transition-all"
+              >
+                All Articles <span aria-hidden>→</span>
+              </Link>
+            </div>
+            
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {posts.map((p) => (
+                <PostCard key={p.id} post={p} onOpen={() => setOpenPost(p)} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* About Us */}
       <section id="about" className="relative bg-stone-50 px-6 py-16 md:px-10 md:py-20">
         <div className="mx-auto max-w-6xl">
@@ -801,6 +841,10 @@ function Index() {
           </div>
         </div>
       </section>
+
+      {openPost && (
+        <PostModal post={openPost} onClose={() => setOpenPost(null)} />
+      )}
     </PageShell>
   );
 }

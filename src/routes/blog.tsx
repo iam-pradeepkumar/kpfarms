@@ -90,7 +90,7 @@ function extractYoutubeUrl(text: string | null | undefined): string | null {
   return m ? m[0] : null;
 }
 
-function PostCard({ post, onOpen }: { post: BlogPost; onOpen: () => void }) {
+export function PostCard({ post, onOpen }: { post: BlogPost; onOpen: () => void }) {
   const cover = useMediaUrl(post.cover_url);
   const youtubeUrl = extractYoutubeUrl(post.video_url);
   return (
@@ -130,7 +130,7 @@ function PostCard({ post, onOpen }: { post: BlogPost; onOpen: () => void }) {
   );
 }
 
-function PostModal({ post, onClose }: { post: BlogPost; onClose: () => void }) {
+export function PostModal({ post, onClose }: { post: BlogPost; onClose: () => void }) {
   const cover = useMediaUrl(post.cover_url);
   const video = useMediaUrl(post.video_url);
   const youtubeUrl = extractYoutubeUrl(post.video_url);
