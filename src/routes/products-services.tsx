@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageShell, PageHero } from "@/components/site/page-shell";
-import { Play } from "lucide-react";
 
 export const Route = createFileRoute("/products-services")({
   head: () => ({
@@ -9,13 +8,13 @@ export const Route = createFileRoute("/products-services")({
       {
         name: "description",
         content:
-          "Advice, shed planning, building work, equipment picking, feed help, business plans and online marketing for poultry farms from KP Farm Ventures.",
+          "Poultry farm advice, farm visits, shed design plans and shed making quotations from KP Farm Ventures.",
       },
       { property: "og:title", content: "Services — KP Farm Ventures" },
       {
         property: "og:description",
         content:
-          "All the services we offer, from planning a shed to feed help and business advice.",
+          "Four key services: farm advice, farm visit, shed design plan and shed making quotation.",
       },
     ],
   }),
@@ -24,99 +23,96 @@ export const Route = createFileRoute("/products-services")({
 
 const SERVICES = [
   {
-    title: "Poultry Farm Advice",
-    desc: "Farm check-ups, safety planning, and full help with your daily farm work.",
-    bookable: true,
+    num: "01",
+    color: "kp-green",
+    title: "Poultry Farm Advice and Consultation",
+    desc: "Get expert guidance on starting, running and growing your poultry farm — either through an online meeting or an in-person visit. We answer all your questions and give you a clear action plan.",
+    cta: "Book Consultation",
+    to: "/consultation" as const,
   },
   {
-    title: "Shed Planning",
-    desc: "Shed designs made for your land, with good airflow, light and space for your birds.",
+    num: "02",
+    color: "kp-red",
+    title: "Invite for the Farm Visit to Explore Real Experience",
+    desc: "We invite you to our working poultry farm so you can see real shed setup, feeding systems, water management, safety measures and day-to-day operations firsthand. Nothing beats learning on a real farm.",
+    cta: "Book Farm Visit",
+    to: "/farm-visit" as const,
   },
   {
-    title: "Shed Building Service",
-    desc: "Full shed building with trusted builders and good-quality materials.",
+    num: "03",
+    color: "kp-gold",
+    title: "Construction and Shed Design Plan",
+    desc: "We prepare a professional shed design plan tailored to your land size, flock size and budget. The plan covers shed dimensions, ventilation, lighting, flooring and equipment placement.",
+    cta: "Get a Plan",
+    to: "/consultation" as const,
   },
   {
-    title: "Shed Cost Estimate",
-    desc: "Clear cost list for your shed, showing each material and labour charge.",
-  },
-  {
-    title: "Equipment Picking",
-    desc: "Feeders, drinkers, chick warmers and foggers — the right gear for your weather and size.",
-  },
-  {
-    title: "Farm Layout Plan",
-    desc: "A full plan for your sheds, storage rooms, safety areas and waste handling.",
-  },
-  {
-    title: "Feed Help",
-    desc: "Feed making, storage tips, and feeding plans for every age of your birds.",
-  },
-  {
-    title: "New Farm Help",
-    desc: "Licences, loans, and day-one steps — we help you from the very start.",
-  },
-  {
-    title: "Business Planning",
-    desc: "Money plans, break-even numbers, and how to enter your local market.",
-  },
-  {
-    title: "Online Marketing Help",
-    desc: "Local Google search tips, WhatsApp selling, and social media help for farm owners.",
+    num: "04",
+    color: "kp-green",
+    title: "Construction and Shed Making Quotation",
+    desc: "We provide a detailed, transparent cost quotation for building your poultry shed — covering materials, labour and equipment. No hidden charges. You know exactly what you are paying for.",
+    cta: "Get a Quote",
+    to: "/consultation" as const,
   },
 ];
+
+const colorMap: Record<string, { badge: string; ring: string; btn: string }> = {
+  "kp-green": {
+    badge: "text-kp-green bg-kp-green/10",
+    ring: "hover:border-kp-green/40",
+    btn: "bg-kp-green text-white hover:opacity-90",
+  },
+  "kp-red": {
+    badge: "text-kp-red bg-kp-red/10",
+    ring: "hover:border-kp-red/40",
+    btn: "bg-kp-red text-white hover:opacity-90",
+  },
+  "kp-gold": {
+    badge: "text-kp-gold bg-kp-gold/10",
+    ring: "hover:border-kp-gold/40",
+    btn: "bg-kp-gold text-white hover:opacity-90",
+  },
+};
 
 function ProductsServices() {
   return (
     <PageShell>
       <PageHero
-        eyebrow="Services"
-        title="Everything you need for a"
-        accent="strong poultry farm"
-        desc="Ten simple services that cover your full farm journey. Each card has a short video to help you understand."
+        eyebrow="Our Services"
+        title="Four ways we help you"
+        accent="build a great farm"
+        desc="From expert advice to hands-on farm visits and professional shed planning — everything you need to get your poultry farm started right."
       />
 
       <section className="px-6 py-16 md:px-10">
-        <div className="mx-auto max-w-6xl space-y-10">
-          {SERVICES.map((s, i) => (
-            <article
-              key={s.title}
-              className={`grid gap-8 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm transition hover:shadow-xl md:grid-cols-2 md:p-10 ${
-                i % 2 ? "md:[&>div:first-child]:order-2" : ""
-              }`}
-            >
-              <div className="flex aspect-video items-center justify-center rounded-2xl bg-gradient-to-br from-kp-green/10 via-kp-gold/10 to-kp-red/10">
-                <div className="flex flex-col items-center gap-3 text-kp-green">
-                  <div className="flex size-16 items-center justify-center rounded-full bg-white shadow-lg">
-                    <Play className="ml-1" />
-                  </div>
-                  <div className="text-xs font-bold uppercase tracking-widest">
-                    Video coming soon
-                  </div>
+        <div className="mx-auto max-w-4xl space-y-6">
+          {SERVICES.map((s) => {
+            const c = colorMap[s.color];
+            return (
+              <article
+                key={s.num}
+                className={`flex items-start gap-5 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl md:p-8 ${c.ring}`}
+              >
+                <div
+                  className={`mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-2xl text-sm font-extrabold ${c.badge}`}
+                >
+                  {s.num}
                 </div>
-              </div>
-              <div className="flex flex-col justify-center">
-                <div className="mb-2 text-xs font-bold uppercase tracking-widest text-kp-gold">
-                  Service · {String(i + 1).padStart(2, "0")}
+                <div className="flex-1">
+                  <h2 className="mb-2 font-display text-xl font-extrabold md:text-2xl">
+                    {s.title}
+                  </h2>
+                  <p className="mb-5 text-stone-500">{s.desc}</p>
+                  <Link
+                    to={s.to}
+                    className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold transition ${c.btn}`}
+                  >
+                    {s.cta} →
+                  </Link>
                 </div>
-                <h2 className="mb-3 font-display text-2xl font-extrabold md:text-3xl">{s.title}</h2>
-                <p className="mb-6 text-stone-600">{s.desc}</p>
-                <div className="flex flex-wrap gap-3">
-                  <button className="rounded-xl border-2 border-stone-200 bg-white px-5 py-2.5 text-sm font-bold hover:bg-stone-50">
-                    Learn More
-                  </button>
-                  {s.bookable && (
-                    <Link
-                      to="/consultation"
-                      className="rounded-xl bg-kp-green px-5 py-2.5 text-sm font-bold text-white hover:opacity-90"
-                    >
-                      Book Now
-                    </Link>
-                  )}
-                </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
       </section>
     </PageShell>
