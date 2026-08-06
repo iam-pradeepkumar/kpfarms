@@ -1,6 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { scheduleGoogleMeet } from "@/lib/meetings.functions";
+import { scheduleGoogleMeet, getCalendarStatus } from "@/lib/meetings.functions";
+import {
+  startGoogleCalendarConnect,
+  getMyGoogleCalendar,
+  disconnectGoogleCalendar,
+} from "@/lib/gcal.functions";
 import { useEffect, useMemo, useState } from "react";
 
 import type { Session } from "@supabase/supabase-js";
@@ -19,6 +24,8 @@ import {
   Calendar,
   Video,
   Bell,
+  Link2,
+  Unlink,
 } from "lucide-react";
 import {
   getPaymentQrUrl,
@@ -2174,12 +2181,6 @@ const DATE_FIELD: Record<string, string> = {
   training_bookings: "cohort_date",
 };
 
-function generateGoogleMeetLink(bookingId: string) {
-  const hash = String(bookingId || Date.now().toString(36)).replace(/[^a-z0-9]/gi, "").toLowerCase();
-  const pad = (hash + "kpfarm").slice(0, 10);
-  return `https://meet.google.com/${pad.slice(0, 3)}-${pad.slice(3, 7)}-${pad.slice(7, 10)}`;
-}
-
 function normalizeTime(value: string) {
   const v = value.trim();
   const m = v.match(/^(\d{1,2}):(\d{2})/);
@@ -2227,26 +2228,10 @@ function BookingActions({
         if (!cancelled) setProofUrl(url);
       })();
     }
-    if (isOnlineMeeting && !link) {
-      (async () => {
-        const { data } = await supabase
-          .from("site_settings")
-          .select("value")
-          .eq("key", "default_meet_link")
-          .maybeSingle();
-        if (!cancelled) {
-          if (data?.value) {
-            setLink(data.value);
-          } else {
-            setLink(generateGoogleMeetLink(String(row.id)));
-          }
-        }
-      })();
-    }
     return () => {
       cancelled = true;
     };
-  }, [open, proofPath, isOnlineMeeting, link, row.id]);
+  }, [open, proofPath]);
 
   const confirmSlot = async () => {
     if (isOnlineMeeting && !time) {
@@ -2447,26 +2432,56 @@ function BookingActions({
 
             {isOnlineMeeting ? (
               <div className="mb-4">
-                <AdminLabel>Google Meeting Link</AdminLabel>
-                <div className="flex gap-2">
+                <AdminLabel>Schedule Google Calendar Meeting</AdminLabel>
+                {canSchedule ? (
+                  <button
+                    type="button"
+                    onClick={doSchedule}
+                    disabled={scheduling}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-stone-900 px-4 py-3.5 text-center text-[11px] font-bold uppercase tracking-widest text-white shadow-sm hover:bg-stone-800 disabled:opacity-60 transition"
+                  >
+                    {scheduling ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Calendar className="size-4" />
+                    )}
+                    {scheduling
+                      ? "Creating meeting on Google Calendar…"
+                      : `Create Meeting on ${prettyWhen}`}
+                  </button>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-stone-300 p-3 text-[11px] text-stone-500">
+                    Pick the final date and time above to schedule the meeting.
+                  </div>
+                )}
+                {scheduleMsg && (
+                  <p className={`mt-2 rounded-xl p-2.5 text-[11px] font-medium ${
+                    scheduleMsg.includes("created") || scheduleMsg.includes("Meeting")
+                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                      : "bg-red-50 text-red-800 border border-red-200"
+                  }`}>
+                    {scheduleMsg}
+                  </p>
+                )}
+                <p className="mt-1.5 text-[11px] text-stone-500">
+                  Creates a Google Calendar event with a Google Meet link and
+                  invites {customerEmail ? customerEmail : "the customer"} automatically.
+                  {!customerEmail &&
+                    " This customer did not share an e-mail, so send them the link on WhatsApp."}
+                </p>
+
+                <div className="mt-3">
+                  <AdminLabel>Meeting link</AdminLabel>
                   <input
                     value={link}
                     onChange={(e) => setLink(e.target.value)}
-                    placeholder="https://meet.google.com/xxx-yyyy-zzz"
+                    placeholder="Auto-filled after scheduling from Google Calendar"
                     className="w-full min-w-0 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm focus:border-kp-green focus:bg-white focus:outline-none"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setLink(generateGoogleMeetLink(String(row.id)))}
-                    className="shrink-0 rounded-xl border border-stone-200 bg-white px-3.5 py-3 text-xs font-bold uppercase tracking-wider text-stone-700 hover:border-kp-green hover:text-kp-green"
-                    title="Generate fresh meeting link for this booking"
-                  >
-                    Generate New
-                  </button>
+                  <p className="mt-1 text-[11px] text-stone-400">
+                    This link will be sent to the customer on WhatsApp when you confirm.
+                  </p>
                 </div>
-                <p className="mt-1 text-[11px] text-stone-400">
-                  This meeting link is generated for this booking. When you click "Schedule Meeting", it will be saved and sent to the customer on WhatsApp.
-                </p>
               </div>
             ) : (
               <p className="mb-4 rounded-xl border border-dashed border-stone-300 p-4 text-[11px] text-stone-500">
@@ -2493,8 +2508,8 @@ function BookingActions({
             >
               {saving && <Loader2 className="size-4 animate-spin" />}
               {waNumber
-                ? `Schedule Meeting & Send WhatsApp (${prettyWhen || "Pick Slot"})`
-                : `Schedule Meeting (${prettyWhen || "Pick Slot"})`}
+                ? `Confirm & Send WhatsApp (${prettyWhen || "Pick Slot"})`
+                : `Confirm ${whenLabel.toLowerCase()} (${prettyWhen || "Pick Slot"})`}
             </button>
           </div>
         </div>
@@ -2591,7 +2606,7 @@ function SettingsTab() {
 
         <AdminWhatsappCard />
         <PhoneAlertsCard />
-        <GoogleMeetSettingsCard />
+        <GoogleCalendarSettingsCard />
       </div>
     </div>
   );
@@ -2858,97 +2873,129 @@ function AdminWhatsappCard() {
   );
 }
 
-/* -------- Settings: Google Meet Link -------- */
+/* -------- Settings: Google Calendar Connection -------- */
 
-function GoogleMeetSettingsCard() {
-  const [defaultLink, setDefaultLink] = useState("");
+function GoogleCalendarSettingsCard() {
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const [account, setAccount] = useState("");
+  const [connecting, setConnecting] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const checkStatus = useServerFn(getMyGoogleCalendar);
+  const startConnect = useServerFn(startGoogleCalendarConnect);
+  const doDisconnect = useServerFn(disconnectGoogleCalendar);
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("site_settings")
-      .select("value")
-      .eq("key", "default_meet_link")
-      .maybeSingle();
-    if (data?.value) {
-      setDefaultLink(data.value);
+    setError(null);
+    try {
+      const status = await checkStatus();
+      setConnected(status.connected);
+      setAccount(status.account || "");
+      if (status.error) setError(status.error);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to check status.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     load();
   }, []);
 
-  const saveSetting = async () => {
-    setSaving(true);
-    const { error: err } = await supabase
-      .from("site_settings")
-      .upsert({ key: "default_meet_link", value: defaultLink.trim() }, { onConflict: "key" });
-    setSaving(false);
-    if (err) alert(err.message);
-    else {
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
+  const handleConnect = async () => {
+    setConnecting(true);
+    setError(null);
+    try {
+      const { authorizationUrl } = await startConnect({
+        data: { origin: window.location.origin },
+      });
+      // Full-page redirect to Google (not popup)
+      window.location.href = authorizationUrl;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not start Google sign-in.");
+      setConnecting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (!confirm("Disconnect your Google Calendar? Meetings will no longer be auto-created."))
+      return;
+    setDisconnecting(true);
+    try {
+      await doDisconnect();
+      setConnected(false);
+      setAccount("");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Could not disconnect.");
+    } finally {
+      setDisconnecting(false);
     }
   };
 
   return (
     <div className="rounded-3xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="font-display text-lg font-extrabold">Google Meet Link</h2>
-        <span className="rounded-full border border-emerald-200 bg-kp-green/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-kp-green">
-          Direct Connect
-        </span>
+        <h2 className="font-display text-lg font-extrabold">Google Calendar</h2>
+        {connected ? (
+          <span className="rounded-full border border-emerald-200 bg-kp-green/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-kp-green">
+            Connected
+          </span>
+        ) : (
+          <span className="rounded-full border border-stone-200 bg-stone-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-stone-500">
+            Not Connected
+          </span>
+        )}
       </div>
       <p className="mb-4 mt-1 text-xs text-stone-500">
-        Set a default Google Meet link to automatically attach to online consultation bookings, or paste/edit a custom meeting link when confirming any booking.
+        Connect your Google Calendar to automatically create meetings with Google Meet links when confirming consultation bookings.
       </p>
 
       {loading ? (
         <div className="flex justify-center py-6">
           <Loader2 className="size-6 animate-spin text-kp-green" />
         </div>
+      ) : connected ? (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3">
+            <Check className="size-4 text-kp-green" />
+            <span className="text-sm font-medium text-emerald-900">
+              {account || "Google Calendar connected"}
+            </span>
+          </div>
+          <p className="text-[11px] text-stone-500">
+            When you click "Create Meeting" on a consultation booking, a Google Calendar event with a Google Meet link will be created automatically on this account.
+          </p>
+          <button
+            onClick={handleDisconnect}
+            disabled={disconnecting}
+            className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-white px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-red-600 hover:bg-red-50 disabled:opacity-60"
+          >
+            {disconnecting ? <Loader2 className="size-3.5 animate-spin" /> : <Unlink className="size-3.5" />}
+            Disconnect
+          </button>
+        </div>
       ) : (
-        <div className="space-y-4">
-          <div>
-            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-stone-600">
-              Default Google Meet Room Link
-            </label>
-            <input
-              type="url"
-              placeholder="e.g. https://meet.google.com/xyz-abc-def"
-              value={defaultLink}
-              onChange={(e) => setDefaultLink(e.target.value)}
-              className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm focus:border-kp-green focus:bg-white focus:outline-none"
-            />
-            <p className="mt-1 text-[11px] text-stone-400">
-              This link will auto-fill whenever you open an online consultation booking to confirm it.
+        <div className="space-y-3">
+          {error && (
+            <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-[11px] font-medium text-red-700">
+              {error}
             </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={saveSetting}
-              disabled={saving}
-              className="inline-flex items-center gap-2 rounded-full bg-kp-green px-5 py-2.5 text-xs font-bold uppercase tracking-widest text-white hover:bg-kp-green/90 disabled:opacity-60"
-            >
-              {saving && <Loader2 className="size-3.5 animate-spin" />}
-              {saved ? "Saved!" : "Save Default Link"}
-            </button>
-
-            <a
-              href="https://meet.google.com/new"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-stone-700 hover:border-kp-green hover:text-kp-green"
-            >
-              <ExternalLink size={13} /> Create Instant Meet Room
-            </a>
-          </div>
+          )}
+          <button
+            onClick={handleConnect}
+            disabled={connecting}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-stone-900 px-5 py-3.5 text-xs font-bold uppercase tracking-widest text-white shadow-sm hover:bg-stone-800 disabled:opacity-60 transition"
+          >
+            {connecting ? <Loader2 className="size-4 animate-spin" /> : <Link2 className="size-4" />}
+            Connect Google Calendar
+          </button>
+          <p className="text-[11px] text-stone-400">
+            You will be redirected to Google to grant calendar access. This is a one-time setup.
+          </p>
         </div>
       )}
     </div>
