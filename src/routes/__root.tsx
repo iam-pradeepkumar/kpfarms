@@ -129,7 +129,36 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
+  pendingComponent: LoadingScreen,
 });
+
+function LoadingScreen() {
+  return (
+    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-stone-50 p-4">
+      <div className="relative aspect-video w-full max-w-lg overflow-hidden rounded-3xl border border-stone-200 bg-black shadow-2xl">
+        <video
+          src="https://www.image2url.com/r2/default/videos/1786038730680-c9cd68c1-328d-4f08-8152-4b40d57c7104.mp4"
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-6">
+          <div className="flex items-center gap-3">
+            <span className="flex size-4 items-center justify-center">
+              <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-white opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+            </span>
+            <span className="text-sm font-bold uppercase tracking-widest text-white drop-shadow">
+              Loading KP Farm Ventures...
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function RootShell({ children }: { children: ReactNode }) {
   return (

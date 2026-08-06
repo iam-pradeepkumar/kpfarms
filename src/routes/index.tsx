@@ -182,7 +182,7 @@ function Index() {
       <header className="relative overflow-hidden px-6 pb-16 pt-10 md:px-10 md:pb-20 md:pt-14">
         {/* Full-bleed farm background */}
         <img
-          src="/media/hero-farm-bg.png"
+          src="/media/hero-farm-bg.jpg"
           alt=""
           aria-hidden
           className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right"
