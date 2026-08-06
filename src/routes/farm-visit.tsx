@@ -57,6 +57,21 @@ function FarmVisit() {
         clearBookingWhatsapp("farm_visit");
         return;
       }
+      if (existing.visit_date && isPastDate(existing.visit_date)) {
+        setErrMsg("You already booked date is over, book new date");
+        setBookingId(existing.id);
+        setForm((f) => ({
+          ...f,
+          whatsapp: existing.whatsapp || wa,
+          name: existing.name || f.name,
+          email: existing.email || f.email,
+          visit_date: "",
+          group_size: existing.group_size != null ? String(existing.group_size) : f.group_size,
+          notes: existing.notes || f.notes,
+        }));
+        setStep(2);
+        return;
+      }
       setBookingId(existing.id);
       setForm((f) => ({
         ...f,
@@ -84,6 +99,21 @@ function FarmVisit() {
 
     const existing = await resumeBooking("farm_visit", form.whatsapp);
     if (existing?.id) {
+      if (existing.visit_date && isPastDate(existing.visit_date)) {
+        setErrMsg("You already booked date is over, book new date");
+        setBookingId(existing.id);
+        setForm((f) => ({
+          ...f,
+          name: existing.name || f.name,
+          email: existing.email || f.email,
+          visit_date: "",
+          group_size: existing.group_size != null ? String(existing.group_size) : f.group_size,
+          notes: existing.notes || f.notes,
+        }));
+        setLoading(false);
+        setStep(2);
+        return;
+      }
       setBookingId(existing.id);
       setForm((f) => ({
         ...f,

@@ -75,6 +75,22 @@ function Consultation() {
         clearBookingWhatsapp("consultation");
         return;
       }
+      if (existing.preferred_date && isPastDate(existing.preferred_date)) {
+        setErrMsg("You already booked date is over, book new date");
+        setBookingId(existing.id);
+        setForm((f) => ({
+          ...f,
+          whatsapp: existing.whatsapp || wa,
+          name: existing.name || f.name,
+          email: existing.email || f.email,
+          topic: existing.topic || f.topic,
+          preferred_date: "",
+          preferred_time: "",
+          notes: existing.notes || f.notes,
+        }));
+        setStep(2);
+        return;
+      }
       setBookingId(existing.id);
       setForm((f) => ({
         ...f,
@@ -108,6 +124,22 @@ function Consultation() {
     // Resume if this WhatsApp has an unfinished booking
     const existing = await resumeBooking("consultation", form.whatsapp);
     if (existing?.id) {
+      if (existing.preferred_date && isPastDate(existing.preferred_date)) {
+        setErrMsg("You already booked date is over, book new date");
+        setBookingId(existing.id);
+        setForm((f) => ({
+          ...f,
+          name: existing.name || f.name,
+          email: existing.email || f.email,
+          topic: existing.topic || f.topic,
+          preferred_date: "",
+          preferred_time: "",
+          notes: existing.notes || f.notes,
+        }));
+        setLoading(false);
+        setStep(2);
+        return;
+      }
       setBookingId(existing.id);
       setForm((f) => ({
         ...f,

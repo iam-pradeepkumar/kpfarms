@@ -5,7 +5,7 @@ import { PageShell, PageHero } from "@/components/site/page-shell";
 import { StepIndicator } from "@/components/site/step-indicator";
 import { supabase } from "@/integrations/supabase/client";
 import { PaymentStep } from "@/components/site/payment-step";
-import { todayIso } from "@/lib/dates";
+import { todayIso, isPastDate } from "@/lib/dates";
 import {
   registerTraining,
   saveTrainingSlot,
@@ -110,23 +110,36 @@ function Training() {
       if (wa) {
         const existing = await resumeBooking("training", wa);
         if (existing?.id) {
-          setBookingId(existing.id);
-          setForm((f) => ({
-            ...f,
-            whatsapp: existing.whatsapp || wa,
-            name: existing.name || f.name,
-            email: existing.email || f.email,
-            notes: existing.notes || f.notes,
-            payment_reference: existing.payment_reference || f.payment_reference,
-          }));
-          const targetStep = existing.booking_step === "slot_booked" ? 3 : 2;
-          setStep(targetStep);
+          if (existing.cohort_date && isPastDate(existing.cohort_date)) {
+            setErrMsg("You already booked date is over, book new date");
+            setBookingId(existing.id);
+            setForm((f) => ({
+              ...f,
+              whatsapp: existing.whatsapp || wa,
+              name: existing.name || f.name,
+              email: existing.email || f.email,
+              notes: existing.notes || f.notes,
+            }));
+            setStep(0); // Prompt them to select a new active program batch
+          } else {
+            setBookingId(existing.id);
+            setForm((f) => ({
+              ...f,
+              whatsapp: existing.whatsapp || wa,
+              name: existing.name || f.name,
+              email: existing.email || f.email,
+              notes: existing.notes || f.notes,
+              payment_reference: existing.payment_reference || f.payment_reference,
+            }));
+            const targetStep = existing.booking_step === "slot_booked" ? 3 : 2;
+            setStep(targetStep);
 
-          // Match program name to get the right program ID
-          const matched = list.find((p) => p.name === existing.program);
-          if (matched) {
-            matchedProgramId = matched.id;
-            localStorage.setItem(`training_step_${matched.id}`, String(targetStep));
+            // Match program name to get the right program ID
+            const matched = list.find((p) => p.name === existing.program);
+            if (matched) {
+              matchedProgramId = matched.id;
+              localStorage.setItem(`training_step_${matched.id}`, String(targetStep));
+            }
           }
         } else {
           clearBookingWhatsapp("training");
@@ -160,6 +173,19 @@ function Training() {
 
     const existing = await resumeBooking("training", form.whatsapp);
     if (existing?.id) {
+      if (existing.cohort_date && isPastDate(existing.cohort_date)) {
+        setErrMsg("You already booked date is over, book new date");
+        setBookingId(existing.id);
+        setForm((f) => ({
+          ...f,
+          name: existing.name || f.name,
+          email: existing.email || f.email,
+          notes: existing.notes || f.notes,
+        }));
+        setLoading(false);
+        setStep(0); // Go back to select a new cohort date/program
+        return;
+      }
       setBookingId(existing.id);
       setForm((f) => ({
         ...f,
@@ -232,6 +258,11 @@ function Training() {
           </div>
         ) : step === 0 ? (
           <div className="mx-auto max-w-4xl">
+            {errMsg && (
+              <div className="mb-6 rounded-xl bg-kp-red/10 px-4 py-3 text-center text-sm font-semibold text-kp-red">
+                {errMsg}
+              </div>
+            )}
             <h2 className="mb-6 font-display text-2xl font-extrabold text-stone-900 sm:text-3xl">
               Choose your training program
             </h2>
@@ -537,13 +568,13 @@ function TrainingExpandableDescription({ text }: { text: string }) {
 
   if (text.length <= maxLen) {
     return (
-      <p className="mt-2 text-sm text-stone-600 break-words [overflow-wrap:anywhere]">{text}</p>
+      <p className="mt-2 text-sm text-stone-600 break-words whitespace-pre-line [overflow-wrap:anywhere]">{text}</p>
     );
   }
 
   return (
-    <div className="mt-2">
-      <p className="text-sm text-stone-600 break-words [overflow-wrap:anywhere]">
+    <div className="mt-2 text-left">
+      <p className="text-sm text-stone-600 break-words whitespace-pre-line [overflow-wrap:anywhere]">
         {expanded ? text : text.slice(0, maxLen).trim() + "…"}
       </p>
       <button
