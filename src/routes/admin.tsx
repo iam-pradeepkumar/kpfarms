@@ -16,6 +16,8 @@ import {
   X,
   MessageCircle,
   ExternalLink,
+  Calendar,
+  Video,
 } from "lucide-react";
 import {
   getPaymentQrUrl,
@@ -2171,6 +2173,51 @@ const DATE_FIELD: Record<string, string> = {
   training_bookings: "cohort_date",
 };
 
+function buildGoogleCalendarUrl({
+  title,
+  description,
+  date,
+  time,
+  minutes = 45,
+  customerEmail,
+}: {
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  minutes?: number;
+  customerEmail?: string;
+}) {
+  if (!date || !time) return "";
+  try {
+    const [h, m] = time.split(":").map((n) => parseInt(n, 10));
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const startStr = `${date}T${pad(h)}:${pad(m)}:00`;
+    const startDt = new Date(startStr);
+    const endDt = new Date(startDt.getTime() + minutes * 60000);
+
+    const formatIso = (d: Date) =>
+      d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+
+    const dates = `${formatIso(startDt)}/${formatIso(endDt)}`;
+
+    const params = new URLSearchParams({
+      action: "TEMPLATE",
+      text: title,
+      details: description,
+      dates: dates,
+    });
+
+    if (customerEmail) {
+      params.set("add", customerEmail);
+    }
+
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  } catch {
+    return "";
+  }
+}
+
 function normalizeTime(value: string) {
   const v = value.trim();
   const m = v.match(/^(\d{1,2}):(\d{2})/);
@@ -2434,42 +2481,70 @@ function BookingActions({
 
             {isOnlineMeeting ? (
               <div className="mb-4">
-                <AdminLabel>Schedule the Google Meet</AdminLabel>
-                {canSchedule ? (
-                  <button
-                    type="button"
-                    onClick={doSchedule}
-                    disabled={scheduling}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-stone-900 px-4 py-3 text-center text-[11px] font-bold uppercase tracking-widest text-white hover:opacity-90 disabled:opacity-60"
-                  >
-                    {scheduling && <Loader2 className="size-4 animate-spin" />}
-                    Schedule meeting on {prettyWhen}
-                  </button>
-                ) : (
-                  <div className="rounded-xl border border-dashed border-stone-300 p-3 text-[11px] text-stone-500">
-                    Pick the final date and time above to schedule the meeting.
+                <AdminLabel>Create / Schedule Google Meeting</AdminLabel>
+                
+                <div className="mb-3 space-y-2">
+                  {canSchedule && (
+                    <a
+                      href={buildGoogleCalendarUrl({
+                        title: `KP Farm Ventures Online Meeting (${String(row.name ?? "")})`,
+                        description: [
+                          `Online consultation with ${String(row.name ?? "")}`,
+                          row.whatsapp ? `WhatsApp: ${String(row.whatsapp)}` : "",
+                          row.topic ? `Topic: ${String(row.topic)}` : "",
+                        ].filter(Boolean).join("\n"),
+                        date,
+                        time,
+                        customerEmail: customerEmail || undefined,
+                      })}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-kp-green px-4 py-3 text-center text-[11px] font-bold uppercase tracking-widest text-white shadow-sm hover:bg-kp-green/90 transition"
+                    >
+                      <Calendar className="size-4" /> Create Meeting Event on Google Calendar ({prettyWhen})
+                    </a>
+                  )}
+
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      href="https://meet.google.com/new"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-center text-[11px] font-bold uppercase tracking-wider text-stone-700 hover:border-kp-green hover:text-kp-green"
+                    >
+                      <Video className="size-3.5" /> Instant Google Meet Room
+                    </a>
+
+                    {canSchedule && (
+                      <button
+                        type="button"
+                        onClick={doSchedule}
+                        disabled={scheduling}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-2 text-center text-[11px] font-bold uppercase tracking-wider text-stone-700 hover:border-kp-green hover:text-kp-green disabled:opacity-60"
+                      >
+                        {scheduling && <Loader2 className="size-3.5 animate-spin" />} Auto-Schedule API
+                      </button>
+                    )}
                   </div>
-                )}
+                </div>
+
                 {scheduleMsg && (
-                  <p className="mt-2 rounded-xl bg-stone-100 p-2 text-[11px] text-stone-700">
+                  <p className="mb-3 rounded-xl bg-stone-100 p-2 text-[11px] font-medium text-stone-700">
                     {scheduleMsg}
                   </p>
                 )}
-                <p className="mt-1 text-[11px] text-stone-500">
-                  Creates the event on your connected Google Calendar, adds a Google Meet link and
-                  invites {customerEmail ? customerEmail : "the customer"} automatically.
-                  {!customerEmail &&
-                    " This customer did not share an e-mail, so send them the link on WhatsApp."}
-                </p>
 
-                <div className="mt-3">
+                <div>
                   <AdminLabel>Meeting link</AdminLabel>
                   <input
                     value={link}
                     onChange={(e) => setLink(e.target.value)}
                     placeholder="https://meet.google.com/xxx-xxxx-xxx"
-                    className="w-full min-w-0 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm"
+                    className="w-full min-w-0 rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm focus:border-kp-green focus:bg-white focus:outline-none"
                   />
+                  <p className="mt-1 text-[11px] text-stone-400">
+                    This link will be saved and sent to {customerEmail || String(row.name ?? "the customer")} on WhatsApp when you confirm.
+                  </p>
                 </div>
               </div>
             ) : (
