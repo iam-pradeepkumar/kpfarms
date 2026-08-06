@@ -264,7 +264,16 @@ function Consultation() {
                   />
                 </div>
                 {errMsg && <ErrorBox>{errMsg}</ErrorBox>}
-                <PrimaryBtn loading={loading}>Confirm Slot</PrimaryBtn>
+                <div className="sm:col-span-2 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="rounded-xl border border-stone-200 bg-white px-5 py-3.5 text-xs font-bold uppercase tracking-widest text-stone-700 hover:bg-stone-50 transition-colors"
+                  >
+                    ← Back to Step 1
+                  </button>
+                  <PrimaryBtn loading={loading}>Confirm Slot</PrimaryBtn>
+                </div>
               </form>
             )}
 
@@ -274,6 +283,7 @@ function Consultation() {
                 bookingId={bookingId}
                 whatsapp={form.whatsapp}
                 onDone={finishPayment}
+                onBack={() => setStep(2)}
               />
             )}
 

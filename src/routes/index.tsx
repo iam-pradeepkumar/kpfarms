@@ -175,12 +175,12 @@ function Index() {
               >
                 Book a Farm Visit <span aria-hidden>→</span>
               </Link>
-              <Link
-                to="/digital-products"
+              <a
+                href="#message"
                 className="rounded-xl border-2 border-stone-200 bg-white px-8 py-4 font-bold transition-all hover:scale-105 hover:bg-stone-50"
               >
-                See Our Products
-              </Link>
+                Message Us
+              </a>
             </div>
 
             <div className="mt-12 flex flex-wrap gap-8 text-sm">

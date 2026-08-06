@@ -8,12 +8,14 @@ export function PaymentStep({
   whatsapp,
   amountNote,
   onDone,
+  onBack,
 }: {
   kind: BookingKind;
   bookingId: string;
   whatsapp: string;
   amountNote?: string;
   onDone: () => void;
+  onBack?: () => void;
 }) {
   const [qr, setQr] = useState<string | null>(null);
   const [qrLoading, setQrLoading] = useState(true);
@@ -131,13 +133,24 @@ export function PaymentStep({
         </div>
       )}
 
-      <button
-        disabled={loading}
-        className="flex items-center justify-center gap-2 rounded-xl bg-kp-green py-4 text-sm font-bold uppercase tracking-widest text-white hover:opacity-90 disabled:opacity-60"
-      >
-        {loading && <Loader2 className="size-4 animate-spin" />}
-        Submit payment screenshot
-      </button>
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="rounded-xl border border-stone-200 bg-white px-5 py-3.5 text-xs font-bold uppercase tracking-widest text-stone-700 hover:bg-stone-50 transition-colors"
+          >
+            ← Back to Step 2
+          </button>
+        )}
+        <button
+          disabled={loading}
+          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-kp-green py-4 text-sm font-bold uppercase tracking-widest text-white hover:opacity-90 disabled:opacity-60"
+        >
+          {loading && <Loader2 className="size-4 animate-spin" />}
+          Submit payment screenshot
+        </button>
+      </div>
     </form>
   );
 }

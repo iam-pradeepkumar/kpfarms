@@ -301,7 +301,16 @@ function Training() {
                     onChange={(v) => setForm({ ...form, email: v })}
                   />
                   {errMsg && <ErrorBox>{errMsg}</ErrorBox>}
-                  <PrimaryBtn loading={loading}>Save & Continue</PrimaryBtn>
+                  <div className="sm:col-span-2 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setStep(0 as never)}
+                      className="rounded-xl border border-stone-200 bg-white px-5 py-3.5 text-xs font-bold uppercase tracking-widest text-stone-700 hover:bg-stone-50 transition-colors"
+                    >
+                      ← Choose Program
+                    </button>
+                    <PrimaryBtn loading={loading}>Save &amp; Continue</PrimaryBtn>
+                  </div>
                 </form>
               )}
 
@@ -342,7 +351,16 @@ function Training() {
                     />
                   </div>
                   {errMsg && <ErrorBox>{errMsg}</ErrorBox>}
-                  <PrimaryBtn loading={loading}>Confirm Slot</PrimaryBtn>
+                  <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="rounded-xl border border-stone-200 bg-white px-5 py-3.5 text-xs font-bold uppercase tracking-widest text-stone-700 hover:bg-stone-50 transition-colors"
+                    >
+                      ← Back to Step 1
+                    </button>
+                    <PrimaryBtn loading={loading}>Confirm Slot</PrimaryBtn>
+                  </div>
                 </form>
               )}
 
@@ -352,6 +370,7 @@ function Training() {
                   bookingId={bookingId}
                   whatsapp={form.whatsapp}
                   onDone={finishPayment}
+                  onBack={() => setStep(2)}
                 />
               )}
 
