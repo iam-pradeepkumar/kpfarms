@@ -2780,6 +2780,119 @@ function HomeVideosCard() {
           })}
         </div>
       )}
+      <HeroStatsEditorCard />
+    </div>
+  );
+}
+
+function HeroStatsEditorCard() {
+  const [stats, setStats] = useState({
+    stat_consultations: "507",
+    stat_farm_visits: "203",
+    stat_training: "150",
+    stat_chicken_production: "10000",
+    stat_batch_counts: "50",
+  });
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("key, value")
+        .in("key", ["stat_consultations", "stat_farm_visits", "stat_training", "stat_chicken_production", "stat_batch_counts"]);
+
+      if (data?.length) {
+        const map: Record<string, string> = {};
+        data.forEach((r) => { if (r.value) map[r.key] = r.value; });
+        setStats((prev) => ({ ...prev, ...map }));
+      }
+    })();
+  }, []);
+
+  const saveStats = async () => {
+    setSaving(true);
+    setMsg("");
+    try {
+      const updates = Object.entries(stats).map(([key, value]) =>
+        supabase.from("site_settings").upsert({ key, value }, { onConflict: "key" })
+      );
+      await Promise.all(updates);
+      setMsg("Stats updated successfully!");
+    } catch {
+      setMsg("Failed to update stats.");
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="mt-8 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
+      <h3 className="font-display text-lg font-extrabold text-stone-900 mb-1">
+        Homepage Hero Counter Stats
+      </h3>
+      <p className="text-xs text-stone-500 mb-6">
+        Update the stat counters shown on the homepage hero section.
+      </p>
+
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+        <label className="block">
+          <span className="text-xs font-bold uppercase tracking-widest text-stone-600">Online Consultations</span>
+          <input
+            type="number"
+            value={stats.stat_consultations}
+            onChange={(e) => setStats({ ...stats, stat_consultations: e.target.value })}
+            className="mt-1 w-full rounded-xl border border-stone-200 px-3.5 py-2 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs font-bold uppercase tracking-widest text-stone-600">Farm Visits</span>
+          <input
+            type="number"
+            value={stats.stat_farm_visits}
+            onChange={(e) => setStats({ ...stats, stat_farm_visits: e.target.value })}
+            className="mt-1 w-full rounded-xl border border-stone-200 px-3.5 py-2 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs font-bold uppercase tracking-widest text-stone-600">Training Programs</span>
+          <input
+            type="number"
+            value={stats.stat_training}
+            onChange={(e) => setStats({ ...stats, stat_training: e.target.value })}
+            className="mt-1 w-full rounded-xl border border-stone-200 px-3.5 py-2 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs font-bold uppercase tracking-widest text-stone-600">Total Chicken Production</span>
+          <input
+            type="number"
+            value={stats.stat_chicken_production}
+            onChange={(e) => setStats({ ...stats, stat_chicken_production: e.target.value })}
+            className="mt-1 w-full rounded-xl border border-stone-200 px-3.5 py-2 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs font-bold uppercase tracking-widest text-stone-600">Successful Run Batches</span>
+          <input
+            type="number"
+            value={stats.stat_batch_counts}
+            onChange={(e) => setStats({ ...stats, stat_batch_counts: e.target.value })}
+            className="mt-1 w-full rounded-xl border border-stone-200 px-3.5 py-2 text-sm"
+          />
+        </label>
+      </div>
+
+      <div className="mt-6 flex items-center gap-4">
+        <button
+          onClick={saveStats}
+          disabled={saving}
+          className="rounded-xl bg-kp-green px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-white hover:opacity-90 disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save Counter Stats"}
+        </button>
+        {msg && <span className="text-xs font-semibold text-kp-green">{msg}</span>}
+      </div>
     </div>
   );
 }

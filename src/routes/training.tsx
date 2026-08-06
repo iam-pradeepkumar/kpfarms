@@ -81,15 +81,16 @@ function Training() {
 
   useEffect(() => {
     (async () => {
-      const { data: progData } = await supabase
-        .from("training_programs")
-        .select("id,name,description,price,cohort_date,session_time,venue,seats,image_url")
-        .eq("active", true)
-        .order("cohort_date", { ascending: true });
-      
-      const { data: bookData } = await supabase
-        .from("training_bookings")
-        .select("program");
+      const [{ data: progData }, { data: bookData }] = await Promise.all([
+        supabase
+          .from("training_programs")
+          .select("id,name,description,price,cohort_date,session_time,venue,seats,image_url")
+          .eq("active", true)
+          .order("cohort_date", { ascending: true }),
+        supabase
+          .from("training_bookings")
+          .select("program")
+      ]);
 
       const counts: Record<string, number> = {};
       ((bookData as { program: string | null }[]) ?? []).forEach((b) => {
@@ -102,32 +103,44 @@ function Training() {
         (p) => !p.cohort_date || p.cohort_date >= todayIso(),
       );
       setPrograms(list);
-      if (list.length && !selectedId) setSelectedId(list[0].id);
+
+      // Now check if we can resume booking
+      const wa = getRememberedBookingWhatsapp("training");
+      let matchedProgramId = null;
+      if (wa) {
+        const existing = await resumeBooking("training", wa);
+        if (existing?.id) {
+          setBookingId(existing.id);
+          setForm((f) => ({
+            ...f,
+            whatsapp: existing.whatsapp || wa,
+            name: existing.name || f.name,
+            email: existing.email || f.email,
+            notes: existing.notes || f.notes,
+            payment_reference: existing.payment_reference || f.payment_reference,
+          }));
+          const targetStep = existing.booking_step === "slot_booked" ? 3 : 2;
+          setStep(targetStep);
+
+          // Match program name to get the right program ID
+          const matched = list.find((p) => p.name === existing.program);
+          if (matched) {
+            matchedProgramId = matched.id;
+            localStorage.setItem(`training_step_${matched.id}`, String(targetStep));
+          }
+        } else {
+          clearBookingWhatsapp("training");
+        }
+      }
+
+      if (matchedProgramId) {
+        setSelectedId(matchedProgramId);
+      } else if (list.length) {
+        setSelectedId(list[0].id);
+      }
       setProgramsLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    const wa = getRememberedBookingWhatsapp("training");
-    if (!wa) return;
-    (async () => {
-      const existing = await resumeBooking("training", wa);
-      if (!existing?.id) {
-        clearBookingWhatsapp("training");
-        return;
-      }
-      setBookingId(existing.id);
-      setForm((f) => ({
-        ...f,
-        whatsapp: existing.whatsapp || wa,
-        name: existing.name || f.name,
-        email: existing.email || f.email,
-        notes: existing.notes || f.notes,
-        payment_reference: existing.payment_reference || f.payment_reference,
-      }));
-      setStep(existing.booking_step === "slot_booked" ? 3 : 2);
-    })();
   }, []);
 
   const submitStep1 = async (e: React.FormEvent) => {
@@ -173,6 +186,7 @@ function Training() {
     }
     setBookingId(id);
     setStep(2);
+    if (selectedId) localStorage.setItem(`training_step_${selectedId}`, "2");
   };
 
   const submitStep2 = async (e: React.FormEvent) => {
@@ -190,6 +204,7 @@ function Training() {
       return;
     }
     setStep(3);
+    if (selectedId) localStorage.setItem(`training_step_${selectedId}`, "3");
   };
 
   const finishPayment = () => {
@@ -222,29 +237,31 @@ function Training() {
             </h2>
             <div className="grid gap-6">
               {programs.map((p) => {
-                const active = selectedId === p.id;
                 const totalSeats = p.seats ?? 20;
                 const booked = bookingCounts[p.name] ?? 0;
                 const available = Math.max(0, totalSeats - booked);
                 const isFull = available <= 0;
 
+                const startRegistration = () => {
+                  setSelectedId(p.id);
+                  const savedStep = Number(localStorage.getItem(`training_step_${p.id}`)) || 1;
+                  setStep(savedStep as 1 | 2 | 3 | 4);
+                };
+
                 return (
-                  <button
+                  <div
                     key={p.id}
-                    type="button"
-                    disabled={isFull}
-                    onClick={() => setSelectedId(p.id)}
-                    className={`text-left rounded-3xl border p-6 shadow-sm transition sm:p-8 ${
+                    className={`rounded-3xl border p-6 shadow-sm transition sm:p-8 ${
                       isFull
-                        ? "border-stone-200 bg-stone-100/70 opacity-60 cursor-not-allowed"
-                        : active
-                          ? "border-kp-green ring-2 ring-kp-green/30 bg-kp-green/5"
-                          : "border-stone-200 bg-white hover:border-kp-green/50"
+                        ? "border-stone-200 bg-stone-100/70 opacity-60"
+                        : selectedId === p.id
+                          ? "border-kp-green ring-2 ring-kp-green/30 bg-white"
+                          : "border-stone-200 bg-white"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="text-xs font-bold uppercase tracking-widest text-kp-gold">
                             Master Class
                           </span>
@@ -258,12 +275,10 @@ function Training() {
                             </span>
                           ) : null}
                         </div>
-                        <div className="mt-1 font-display text-xl font-extrabold sm:text-2xl">
+                        <div className="mt-1 font-display text-xl font-extrabold text-stone-900 sm:text-2xl break-words [overflow-wrap:anywhere]">
                           {p.name}
                         </div>
-                        {p.description && (
-                          <p className="mt-2 text-sm text-stone-600">{p.description}</p>
-                        )}
+                        {p.description && <TrainingExpandableDescription text={p.description} />}
                       </div>
                       {p.price != null && (
                         <div className="shrink-0 rounded-xl bg-kp-green/10 px-4 py-2 text-lg font-extrabold text-kp-green">
@@ -271,37 +286,39 @@ function Training() {
                         </div>
                       )}
                     </div>
-                    <div className="mt-4 grid gap-2 text-sm text-stone-700 sm:grid-cols-3">
-                      <div className="flex items-center gap-2">
-                        <CalendarDays size={16} className="text-kp-green" />{" "}
-                        {formatDate(p.cohort_date)}
-                      </div>
-                      {p.venue && (
+
+                    <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-stone-100 pt-4">
+                      <div className="flex flex-wrap items-center gap-6 text-sm text-stone-700">
                         <div className="flex items-center gap-2">
-                          <MapPin size={16} className="text-kp-green" /> {p.venue}
+                          <CalendarDays size={16} className="text-kp-green" />{" "}
+                          {formatDate(p.cohort_date)}
                         </div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <Users size={16} className={isFull ? "text-red-500" : "text-kp-green"} />{" "}
-                        <span className="font-semibold">
-                          {isFull ? "Full" : `${available} Available`}
-                        </span>{" "}
-                        <span className="text-stone-400">({booked}/{totalSeats} booked)</span>
+                        {p.venue && (
+                          <div className="flex items-center gap-2">
+                            <MapPin size={16} className="text-kp-green" /> {p.venue}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <Users size={16} className={isFull ? "text-red-500" : "text-kp-green"} />{" "}
+                          <span className="font-semibold">
+                            {isFull ? "Full" : `${available} Available`}
+                          </span>{" "}
+                          <span className="text-stone-400">({booked}/{totalSeats} booked)</span>
+                        </div>
                       </div>
+
+                      <button
+                        type="button"
+                        disabled={isFull}
+                        onClick={startRegistration}
+                        className="w-full sm:w-auto rounded-xl bg-kp-green px-6 py-3 text-xs font-bold uppercase tracking-widest text-white shadow-md transition hover:opacity-90 disabled:opacity-50"
+                      >
+                        {isFull ? "Seats Full" : "Join Program →"}
+                      </button>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
-            </div>
-            <div className="mt-8 flex justify-end">
-              <button
-                type="button"
-                disabled={!selectedId}
-                onClick={() => setStep(1)}
-                className="rounded-xl bg-kp-green px-8 py-4 text-sm font-bold uppercase tracking-widest text-white hover:opacity-90 disabled:opacity-50"
-              >
-                Join Program
-              </button>
             </div>
           </div>
         ) : EVENT ? (
@@ -511,5 +528,34 @@ function PrimaryBtn({ loading, children }: { loading: boolean; children: React.R
       {loading && <Loader2 className="size-4 animate-spin" />}
       {children}
     </button>
+  );
+}
+
+function TrainingExpandableDescription({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const maxLen = 120;
+
+  if (text.length <= maxLen) {
+    return (
+      <p className="mt-2 text-sm text-stone-600 break-words [overflow-wrap:anywhere]">{text}</p>
+    );
+  }
+
+  return (
+    <div className="mt-2">
+      <p className="text-sm text-stone-600 break-words [overflow-wrap:anywhere]">
+        {expanded ? text : text.slice(0, maxLen).trim() + "…"}
+      </p>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setExpanded(!expanded);
+        }}
+        className="mt-1 text-xs font-bold text-kp-green hover:underline"
+      >
+        {expanded ? "Show Less" : "Read More"}
+      </button>
+    </div>
   );
 }

@@ -145,6 +145,26 @@ function Index() {
     })();
   }, []);
 
+  const [chickenProdCount, setChickenProdCount] = useState(10000);
+  const [batchRunCount, setBatchRunCount] = useState(50);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("key, value")
+        .in("key", ["stat_consultations", "stat_farm_visits", "stat_training", "stat_chicken_production", "stat_batch_counts"]);
+
+      data?.forEach((row) => {
+        if (row.key === "stat_consultations" && row.value) setConsultCount(Number(row.value) || 507);
+        if (row.key === "stat_farm_visits" && row.value) setVisitCount(Number(row.value) || 203);
+        if (row.key === "stat_training" && row.value) setTrainingCount(Number(row.value) || 150);
+        if (row.key === "stat_chicken_production" && row.value) setChickenProdCount(Number(row.value) || 10000);
+        if (row.key === "stat_batch_counts" && row.value) setBatchRunCount(Number(row.value) || 50);
+      });
+    })();
+  }, []);
+
   return (
     <PageShell>
       {/* Hero */}
@@ -245,6 +265,22 @@ function Index() {
                 </div>
                 <div className="text-xs uppercase tracking-widest text-stone-500">
                   Training Programs
+                </div>
+              </div>
+              <div>
+                <div className="font-display text-2xl font-extrabold text-kp-green">
+                  {chickenProdCount.toLocaleString("en-IN")}+
+                </div>
+                <div className="text-xs uppercase tracking-widest text-stone-500">
+                  Total Chicken Production
+                </div>
+              </div>
+              <div>
+                <div className="font-display text-2xl font-extrabold text-kp-red">
+                  {batchRunCount.toLocaleString("en-IN")}+
+                </div>
+                <div className="text-xs uppercase tracking-widest text-stone-500">
+                  Successful Run Batches
                 </div>
               </div>
             </div>
@@ -620,17 +656,6 @@ function Index() {
               label="Training Programs preview"
               src={videos.home_video_training}
             />
-            <ul className="space-y-3 text-sm text-stone-700">
-              <li className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-                <b>Day 1</b> — Shed setup, chick care and farm safety basics.
-              </li>
-              <li className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-                <b>Day 2</b> — Feed plan, vaccines and tracking growth.
-              </li>
-              <li className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-                <b>Day 3</b> — Selling your birds, pricing, and growing your farm.
-              </li>
-            </ul>
           </div>
         </div>
       </section>
