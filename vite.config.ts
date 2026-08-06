@@ -1,10 +1,10 @@
 // Standard Vite + TanStack Start config for self-hosting on Render (Node server).
-// This replaces @lovable.dev/vite-tanstack-config for non-Lovable deployments.
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+import { nitro } from "nitro/vite";
 
 export default defineConfig({
   plugins: [
@@ -14,14 +14,25 @@ export default defineConfig({
       server: { entry: "server" },
     }),
     react(),
+    nitro({
+      preset: "node-server",
+      output: { dir: ".output", serverDir: ".output/server", publicDir: ".output/public" },
+    }),
   ],
-  resolve: {
-    tsconfigPaths: true,
+  css: {
+    transformer: "lightningcss",
   },
-  // Self-hosting (Render): build a plain Node server at .output/server/index.mjs.
-  // @ts-expect-error — nitro config is injected by tanstackStart at build time
-  nitro: {
-    preset: "node-server",
-    output: { dir: ".output", serverDir: ".output/server", publicDir: ".output/public" },
+  resolve: {
+    alias: {
+      "@": "/home/pradeep/kp/src",
+    },
+    dedupe: [
+      "react",
+      "react-dom",
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
+      "@tanstack/react-query",
+      "@tanstack/query-core",
+    ],
   },
 });
