@@ -70,7 +70,13 @@ function OAuthReturn() {
         } catch {
           /* fall through to error */
         }
-        const reason = e instanceof Error ? e.message : "Could not finish the Google sign-in.";
+        let reason = "Could not finish the Google sign-in.";
+        if (e instanceof Error) {
+          reason = e.message;
+        } else if (typeof e === "object" && e !== null) {
+          const obj = e as Record<string, unknown>;
+          reason = String(obj.message ?? obj.statusMessage ?? obj.data ?? JSON.stringify(e));
+        }
         setMessage(reason);
         setError(true);
         setDone(true);
