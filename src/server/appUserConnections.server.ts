@@ -45,11 +45,10 @@ export async function saveConnectionKeyForUser(
       .from("site_settings")
       .upsert({ key: SITE_SETTINGS_FALLBACK_KEY, value: ciphertext }, { onConflict: "key" });
     if (error) throw error;
-  } catch (e) {
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : (typeof e === "object" && e !== null ? JSON.stringify(e) : String(e));
     console.error("site_settings fallback save error:", e);
-    throw new Error(
-      "Failed to save Google Calendar credentials to database. Please check your Supabase setup.",
-    );
+    throw new Error(`Database save error: ${msg}`);
   }
 }
 
