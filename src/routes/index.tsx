@@ -197,10 +197,6 @@ function Index() {
 
         <div className="mx-auto max-w-6xl">
           <div className="relative z-10 anim-fade-up">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-kp-gold/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-kp-gold">
-              <span className="size-1.5 rounded-full bg-kp-gold animate-glow-pulse" />
-              Trusted Poultry Farm
-            </div>
             <h1 className="mb-8 font-display text-5xl font-extrabold leading-[1.05] md:text-6xl lg:text-7xl">
               Helping You Start a{" "}
               <span className="relative inline-block text-kp-green">

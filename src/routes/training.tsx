@@ -263,7 +263,7 @@ function Training() {
                 {errMsg}
               </div>
             )}
-            <h2 className="mb-6 font-display text-2xl font-extrabold text-stone-900 sm:text-3xl">
+            <h2 className="mb-6 text-center font-display text-2xl font-extrabold text-stone-900 sm:text-3xl">
               Choose your training program
             </h2>
             <div className="grid gap-6">
@@ -282,7 +282,7 @@ function Training() {
                 return (
                   <div
                     key={p.id}
-                    className={`rounded-3xl border p-6 shadow-sm transition sm:p-8 ${
+                    className={`rounded-3xl border p-6 shadow-sm transition sm:p-8 overflow-hidden ${
                       isFull
                         ? "border-stone-200 bg-stone-100/70 opacity-60"
                         : selectedId === p.id

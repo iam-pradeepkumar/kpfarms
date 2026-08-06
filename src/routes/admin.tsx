@@ -502,9 +502,6 @@ function Overview() {
     <div>
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="mb-1 text-xs font-bold uppercase tracking-widest text-kp-gold">
-            Live snapshot
-          </div>
           <h1 className="font-display text-2xl font-extrabold sm:text-3xl md:text-4xl">Overview</h1>
         </div>
         <button
@@ -795,7 +792,7 @@ function ProductsTab() {
             <option value="digital">Digital</option>
             <option value="poultry">Poultry (own)</option>
             <option value="affiliate">Affiliate</option>
-            <option value="training">Training</option>
+
           </select>
           <button
             onClick={load}
@@ -1021,7 +1018,7 @@ function ProductForm({
               <option value="digital">Digital product</option>
               <option value="poultry">Poultry product (own)</option>
               <option value="affiliate">Affiliate product</option>
-              <option value="training">Training program</option>
+
             </select>
           </div>
           <AdminField
