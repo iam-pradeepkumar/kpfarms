@@ -35,7 +35,7 @@ services:
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: GOOGLE_CLIENT_ID
-        sync: false
+        value: 583596411664-jtaibdgh0cu1lnn9v9ek565lb4bp0ujh.apps.googleusercontent.com
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: APP_USER_CONNECTION_KEY_SECRET
