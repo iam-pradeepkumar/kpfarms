@@ -104,8 +104,7 @@ export const scheduleGoogleMeet = createServerFn({ method: "POST" })
     // Persist meeting_link onto the consultation_bookings row in database
     if (meetLink && data.bookingId) {
       try {
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { error: dbErr } = await supabaseAdmin
+        const { error: dbErr } = await context.supabase
           .from("consultation_bookings")
           .update({
             meeting_link: meetLink,

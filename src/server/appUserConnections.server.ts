@@ -5,13 +5,33 @@ import { encryptConnectionKey, decryptConnectionKey } from "@/server/connectionK
 export const SHARED_OWNER_ID = "00000000-0000-0000-0000-000000000000";
 const SITE_SETTINGS_FALLBACK_KEY = "gcal_tokens_encrypted";
 
+function isNewSupabaseApiKey(value: string): boolean {
+  return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
+}
+
 function getReliableSupabaseClient() {
   const url = process.env["SUPABASE_URL"] || "https://ntkinaddmoefuhkxpzid.supabase.co";
   const key =
     process.env["SUPABASE_SERVICE_ROLE_KEY"] ||
     process.env["SUPABASE_PUBLISHABLE_KEY"] ||
     "sb_publishable_aGL6hwcIg2ODNZc66FmJVA_KypN1h7n";
-  return createClient(url, key);
+
+  return createClient(url, key, {
+    global: {
+      fetch: (input, init) => {
+        const headers = new Headers(init?.headers);
+        if (isNewSupabaseApiKey(key) && headers.get("Authorization") === `Bearer ${key}`) {
+          headers.delete("Authorization");
+        }
+        headers.set("apikey", key);
+        return fetch(input, { ...init, headers });
+      },
+    },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
 }
 
 export async function saveConnectionKeyForUser(
