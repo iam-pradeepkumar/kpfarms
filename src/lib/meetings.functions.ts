@@ -79,7 +79,7 @@ export const scheduleGoogleMeet = createServerFn({ method: "POST" })
     };
 
     // Check if Google Calendar is connected
-    const myKey = await getConnectionKeyForUser(context.userId, GCAL_CONNECTOR_ID);
+    const myKey = await getConnectionKeyForUser(context.userId, GCAL_CONNECTOR_ID, context.supabase);
     if (!myKey) {
       throw new Error("Google Calendar is not connected yet. Connect Google Calendar in Settings.");
     }
@@ -89,7 +89,7 @@ export const scheduleGoogleMeet = createServerFn({ method: "POST" })
     let organizerEmail = "";
 
     try {
-      const event = await createMeetEvent(context.userId, calendarPlain, body);
+      const event = await createMeetEvent(context.userId, calendarPlain, body, context.supabase);
       meetLink =
         event.hangoutLink ??
         event.conferenceData?.entryPoints?.find((e) => e.entryPointType === "video")?.uri ??
@@ -137,7 +137,7 @@ export const getCalendarStatus = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await requireAdmin(context);
 
-    const myKey = await getConnectionKeyForUser(context.userId, GCAL_CONNECTOR_ID);
+    const myKey = await getConnectionKeyForUser(context.userId, GCAL_CONNECTOR_ID, context.supabase);
     if (!myKey) {
       return {
         connected: false,
@@ -148,7 +148,7 @@ export const getCalendarStatus = createServerFn({ method: "GET" })
       };
     }
 
-    const { calendars, error } = await adminCalendars(context.userId);
+    const { calendars, error } = await adminCalendars(context.userId, context.supabase);
     if (error || calendars.length === 0) {
       return {
         connected: false,
