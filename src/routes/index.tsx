@@ -187,9 +187,7 @@ function Index() {
           aria-hidden
           className="pointer-events-none absolute inset-0 h-full w-full object-cover object-right"
         />
-        {/* Strong gradient overlays — keep text area clean, farm only peeks on far right */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white via-white to-white/60" />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/90 via-white/70 to-white" />
+
 
         {/* Floating hero decor */}
         <Chick

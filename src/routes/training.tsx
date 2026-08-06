@@ -78,6 +78,7 @@ function Training() {
   const EVENT = programs.find((p) => p.id === selectedId) ?? programs[0];
 
   const [bookingCounts, setBookingCounts] = useState<Record<string, number>>({});
+  const [resumedBooking, setResumedBooking] = useState<any>(null);
 
   useEffect(() => {
     (async () => {
@@ -104,7 +105,7 @@ function Training() {
       );
       setPrograms(list);
 
-      // Now check if we can resume booking
+      // Now check if we can resume booking info
       const wa = getRememberedBookingWhatsapp("training");
       let matchedProgramId = null;
       if (wa) {
@@ -122,6 +123,7 @@ function Training() {
             }));
             setStep(0); // Prompt them to select a new active program batch
           } else {
+            setResumedBooking(existing);
             setBookingId(existing.id);
             setForm((f) => ({
               ...f,
@@ -132,8 +134,7 @@ function Training() {
               payment_reference: existing.payment_reference || f.payment_reference,
             }));
             const targetStep = existing.booking_step === "slot_booked" ? 3 : 2;
-            setStep(targetStep);
-
+            
             // Match program name to get the right program ID
             const matched = list.find((p) => p.name === existing.program);
             if (matched) {
@@ -275,8 +276,13 @@ function Training() {
 
                 const startRegistration = () => {
                   setSelectedId(p.id);
-                  const savedStep = Number(localStorage.getItem(`training_step_${p.id}`)) || 1;
-                  setStep(savedStep as 1 | 2 | 3 | 4);
+                  let targetStep = 1;
+                  if (resumedBooking && resumedBooking.program === p.name) {
+                    targetStep = resumedBooking.booking_step === "slot_booked" ? 3 : 2;
+                  } else {
+                    targetStep = Number(localStorage.getItem(`training_step_${p.id}`)) || 1;
+                  }
+                  setStep(targetStep as 1 | 2 | 3 | 4);
                 };
 
                 return (
