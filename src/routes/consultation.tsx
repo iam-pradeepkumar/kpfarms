@@ -185,142 +185,122 @@ function Consultation() {
       />
 
       <section className="px-6 pb-24 md:px-10">
-        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-3">
-          <div className="lg:col-span-2 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
-            <StepIndicator step={step} labels={["Your details", "Pick a slot", "Payment"]} />
+        <div className="mx-auto max-w-3xl rounded-3xl border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
+          <StepIndicator step={step} labels={["Your details", "Pick a slot", "Payment"]} />
 
-            {step === 1 && (
-              <form className="grid gap-4 sm:grid-cols-2" onSubmit={submitStep1}>
-                <Field
-                  label="Full Name"
-                  required
-                  value={form.name}
-                  onChange={(v) => setForm({ ...form, name: v })}
-                />
-                <Field
-                  label="WhatsApp Number"
-                  type="tel"
-                  required
-                  value={form.whatsapp}
-                  onChange={(v) => setForm({ ...form, whatsapp: v })}
-                />
-                <Field
-                  label="Email"
-                  type="email"
-                  required
-                  value={form.email}
-                  onChange={(v) => setForm({ ...form, email: v })}
-                />
-                <Field
-                  label="Your problem or question"
-                  value={form.topic}
-                  onChange={(v) => setForm({ ...form, topic: v })}
-                />
-                {errMsg && <ErrorBox>{errMsg}</ErrorBox>}
-                <PrimaryBtn loading={loading}>Save & Continue</PrimaryBtn>
-              </form>
-            )}
-
-            {step === 2 && (
-              <form className="grid gap-4 sm:grid-cols-2" onSubmit={submitStep2}>
-                <Field
-                  label="Choose a Date"
-                  type="date"
-                  required
-                  min={todayIso()}
-                  value={form.preferred_date}
-                  onChange={(v) => setForm({ ...form, preferred_date: v })}
-                />
-                <div>
-                  <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-stone-600">
-                    Time
-                  </label>
-                  <select
-                    value={form.preferred_time}
-                    onChange={(e) => setForm({ ...form, preferred_time: e.target.value })}
-                    className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm"
-                  >
-                    {futureSlots(TIME_SLOTS, form.preferred_date).map((s) => (
-                      <option key={s}>{s}</option>
-                    ))}
-                  </select>
-                  {form.preferred_date === todayIso() &&
-                    futureSlots(TIME_SLOTS, form.preferred_date).length === 0 && (
-                      <p className="mt-1 text-[11px] text-kp-red">
-                        No slots left today — please pick another date.
-                      </p>
-                    )}
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-stone-600">
-                    Notes
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={form.notes}
-                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                    className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm"
-                    placeholder="Tell us about your farm and what you want to talk about…"
-                  />
-                </div>
-                {errMsg && <ErrorBox>{errMsg}</ErrorBox>}
-                <div className="sm:col-span-2 grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setStep(1)}
-                    className="w-full rounded-xl border border-stone-200 bg-white py-3.5 text-xs font-bold uppercase tracking-widest text-stone-700 hover:bg-stone-50 transition-colors"
-                  >
-                    ← Back
-                  </button>
-                  <PrimaryBtn loading={loading}>Confirm</PrimaryBtn>
-                </div>
-              </form>
-            )}
-
-            {step === 3 && bookingId && (
-              <PaymentStep
-                kind="consultation"
-                bookingId={bookingId}
-                whatsapp={form.whatsapp}
-                amountNote="₹99"
-                onDone={finishPayment}
-                onBack={() => setStep(2)}
+          {step === 1 && (
+            <form className="grid gap-4 sm:grid-cols-2" onSubmit={submitStep1}>
+              <Field
+                label="Full Name"
+                required
+                value={form.name}
+                onChange={(v) => setForm({ ...form, name: v })}
               />
-            )}
+              <Field
+                label="WhatsApp Number"
+                type="tel"
+                required
+                value={form.whatsapp}
+                onChange={(v) => setForm({ ...form, whatsapp: v })}
+              />
+              <Field
+                label="Email"
+                type="email"
+                required
+                value={form.email}
+                onChange={(v) => setForm({ ...form, email: v })}
+              />
+              <Field
+                label="Your problem or question"
+                value={form.topic}
+                onChange={(v) => setForm({ ...form, topic: v })}
+              />
+              {errMsg && <ErrorBox>{errMsg}</ErrorBox>}
+              <PrimaryBtn loading={loading}>Save & Continue</PrimaryBtn>
+            </form>
+          )}
 
-            {step === 4 && (
-              <div className="py-8 text-center">
-                <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-kp-green/10">
-                  <CheckCircle2 className="text-kp-green" size={36} />
-                </div>
-                <h2 className="mb-2 font-display text-2xl font-extrabold">
-                  Payment sent for checking
-                </h2>
-                <p className="text-sm text-stone-600">
-                  Thanks {form.name.split(" ")[0]}! Our team will check your payment screenshot and
-                  confirm your slot. You will get the Google Meet link on WhatsApp at{" "}
-                  <b>{form.whatsapp}</b>.
-                </p>
+          {step === 2 && (
+            <form className="grid gap-4 sm:grid-cols-2" onSubmit={submitStep2}>
+              <Field
+                label="Choose a Date"
+                type="date"
+                required
+                min={todayIso()}
+                value={form.preferred_date}
+                onChange={(v) => setForm({ ...form, preferred_date: v })}
+              />
+              <div>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-stone-600">
+                  Time
+                </label>
+                <select
+                  value={form.preferred_time}
+                  onChange={(e) => setForm({ ...form, preferred_time: e.target.value })}
+                  className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm"
+                >
+                  {futureSlots(TIME_SLOTS, form.preferred_date).map((s) => (
+                    <option key={s}>{s}</option>
+                  ))}
+                </select>
+                {form.preferred_date === todayIso() &&
+                  futureSlots(TIME_SLOTS, form.preferred_date).length === 0 && (
+                    <p className="mt-1 text-[11px] text-kp-red">
+                      No slots left today — please pick another date.
+                    </p>
+                  )}
               </div>
-            )}
-          </div>
+              <div className="sm:col-span-2">
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-stone-600">
+                  Anything to add? (optional)
+                </label>
+                <textarea
+                  rows={3}
+                  value={form.notes}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm"
+                />
+              </div>
+              {errMsg && <ErrorBox>{errMsg}</ErrorBox>}
+              <div className="sm:col-span-2 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="w-full rounded-xl border border-stone-200 bg-white py-3.5 text-xs font-bold uppercase tracking-widest text-stone-700 hover:bg-stone-50 transition-colors"
+                >
+                  ← Back
+                </button>
+                <PrimaryBtn loading={loading}>Confirm</PrimaryBtn>
+              </div>
+            </form>
+          )}
 
-          <aside className="space-y-6">
-            <div className="rounded-3xl bg-stone-900 p-8 text-white">
-              <div className="text-xs font-bold uppercase tracking-widest text-kp-gold">
-                Meeting Call
+          {step === 3 && bookingId && (
+            <PaymentStep
+              kind="consultation"
+              bookingId={bookingId}
+              whatsapp={form.whatsapp}
+              amountNote="₹99"
+              onDone={finishPayment}
+              onBack={() => setStep(2)}
+            />
+          )}
+
+          {step === 4 && (
+            <div className="py-8 text-center">
+              <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-kp-green/10">
+                <CheckCircle2 className="text-kp-green" size={36} />
               </div>
-              <div className="mt-2 font-display text-3xl font-extrabold">30-minute call</div>
-              <div className="mt-2 text-sm text-stone-400">
-                We share the price on WhatsApp after step 2
-              </div>
-              <ul className="mt-6 space-y-2 text-sm text-stone-300">
-                <li>✔ Pay by UPI QR, Google Pay or PhonePe</li>
-                <li>✔ Payment details on WhatsApp</li>
-                <li>✔ Meeting link sent on WhatsApp</li>
-              </ul>
+              <h2 className="mb-2 font-display text-2xl font-extrabold">
+                Payment sent for checking
+              </h2>
+              <p className="text-sm text-stone-600">
+                Thanks {form.name.split(" ")[0]}! Our team will check your payment screenshot and
+                confirm your slot. You will get the Google Meet link on WhatsApp at{" "}
+                <b>{form.whatsapp}</b>.
+              </p>
             </div>
-          </aside>
+          )}
         </div>
       </section>
     </PageShell>

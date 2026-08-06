@@ -177,9 +177,7 @@ function PoultryProducts() {
                       </div>
                     )}
                     <h3 className="mb-3 font-display text-lg font-bold">{p.name}</h3>
-                    {p.description && (
-                      <p className="mb-3 line-clamp-2 text-sm text-stone-500">{p.description}</p>
-                    )}
+                    {p.description && <ExpandableDescription text={p.description} />}
                     <button
                       onClick={() =>
                         setOrder({
@@ -202,6 +200,30 @@ function PoultryProducts() {
       </section>
       <OrderModal item={order} onClose={() => setOrder(null)} />
     </PageShell>
+  );
+}
+
+function ExpandableDescription({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const maxLen = 75;
+
+  if (text.length <= maxLen) {
+    return <p className="mb-3 text-sm leading-relaxed text-stone-500">{text}</p>;
+  }
+
+  return (
+    <div className="mb-3">
+      <p className="text-sm leading-relaxed text-stone-500">
+        {expanded ? text : `${text.slice(0, maxLen)}... `}
+        <button
+          type="button"
+          onClick={() => setExpanded(!expanded)}
+          className="ml-1 text-xs font-bold text-kp-green hover:underline focus:outline-none"
+        >
+          {expanded ? "read less" : "read more"}
+        </button>
+      </p>
+    </div>
   );
 }
 

@@ -105,9 +105,7 @@ function DigitalProducts() {
                   </div>
                   <div className="flex flex-1 flex-col p-6">
                     <h3 className="mb-2 font-display text-lg font-bold">{p.name}</h3>
-                    {p.description && (
-                      <p className="mb-3 line-clamp-2 text-sm text-stone-500">{p.description}</p>
-                    )}
+                    {p.description && <ExpandableDescription text={p.description} />}
                     {(p.offer_price != null || p.price != null) && (
                       <div className="mb-4 flex items-baseline gap-2">
                         {p.offer_price != null && (
@@ -146,5 +144,29 @@ function DigitalProducts() {
       </section>
       <OrderModal item={order} onClose={() => setOrder(null)} />
     </PageShell>
+  );
+}
+
+function ExpandableDescription({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const maxLen = 75;
+
+  if (text.length <= maxLen) {
+    return <p className="mb-3 text-sm leading-relaxed text-stone-500">{text}</p>;
+  }
+
+  return (
+    <div className="mb-3">
+      <p className="text-sm leading-relaxed text-stone-500">
+        {expanded ? text : `${text.slice(0, maxLen)}... `}
+        <button
+          type="button"
+          onClick={() => setExpanded(!expanded)}
+          className="ml-1 text-xs font-bold text-kp-green hover:underline focus:outline-none"
+        >
+          {expanded ? "read less" : "read more"}
+        </button>
+      </p>
+    </div>
   );
 }
