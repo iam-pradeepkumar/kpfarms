@@ -37,11 +37,11 @@ const FOUNDER = {
   role: "Founder, KP Farm Ventures",
   initials: "SA",
   photos: [
-    { url: "/media/founder-white-shirt.jpg" },
     { url: founderFamily.url },
     { url: founderFormal.url, zoom: 1.25 },
     { url: founderTea.url },
     { url: founderYellow.url },
+    { url: "/media/founder-white-shirt.jpg" },
   ] as { url: string; caption?: string }[],
 };
 

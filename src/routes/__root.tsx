@@ -4,10 +4,11 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -176,11 +177,33 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [showLoading, setShowLoading] = useState(true);
+  const [lastPath, setLastPath] = useState(pathname);
+
+  useEffect(() => {
+    const initTimer = setTimeout(() => {
+      setShowLoading(false);
+    }, 1000);
+    return () => clearTimeout(initTimer);
+  }, []);
+
+  useEffect(() => {
+    if (pathname !== lastPath) {
+      setShowLoading(true);
+      setLastPath(pathname);
+      const timer = setTimeout(() => {
+        setShowLoading(false);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [pathname, lastPath]);
 
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      {showLoading && <LoadingScreen />}
     </QueryClientProvider>
   );
 }

@@ -53,11 +53,11 @@ export const FOUNDER = {
   initials: "SA",
   bio: "I started KP Farm Ventures with one simple vision — to help farmers build profitable, modern, and sustainable poultry businesses through practical knowledge and real-world experience.",
   photos: [
-    { url: "/media/founder-white-shirt.jpg" },
     { url: founderFamily.url },
     { url: founderFormal.url, zoom: 1.25 },
     { url: founderTea.url },
     { url: founderYellow.url },
+    { url: "/media/founder-white-shirt.jpg" },
   ] as { url: string; caption?: string }[],
 };
 
@@ -179,7 +179,7 @@ function Index() {
   return (
     <PageShell>
       {/* Hero */}
-      <header className="relative overflow-hidden px-6 pb-16 pt-10 md:px-10 md:pb-20 md:pt-14">
+      <header className="relative overflow-hidden px-6 pb-16 pt-32 md:px-10 md:pb-20 md:pt-40 lg:pt-44">
         {/* Full-bleed farm background */}
         <img
           src="/media/hero-farm-bg.jpg"

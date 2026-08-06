@@ -1,9 +1,11 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { KpMark } from "./kp-mark";
 
 export function SiteNav() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isHome = pathname === "/";
   const [open, setOpen] = useState(false);
   const [productsOpen, setProductsOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
@@ -28,7 +30,7 @@ export function SiteNav() {
   return (
     <>
       {/* spacer so page content isn't hidden under the floating nav */}
-      <div aria-hidden className="h-24 md:h-28" />
+      {!isHome && <div aria-hidden className="h-24 md:h-28" />}
 
       <nav
         className={`fixed inset-x-0 top-3 z-50 px-3 md:top-5 md:px-6 transition-all duration-300 ${
