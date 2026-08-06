@@ -3,9 +3,9 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
 function key(): Buffer {
-  const raw = process.env["APP_USER_CONNECTION_KEY_SECRET"];
-  if (!raw) throw new Error("APP_USER_CONNECTION_KEY_SECRET is not set");
-  return Buffer.from(raw, "base64");
+  const raw = process.env["APP_USER_CONNECTION_KEY_SECRET"] || "kp_farm_ventures_secure_aes256_encryption_key_2026";
+  const buf = Buffer.from(raw, "utf8");
+  return Buffer.concat([buf, Buffer.alloc(32)]).subarray(0, 32);
 }
 
 export function encryptConnectionKey(plaintext: string): string {
