@@ -144,17 +144,6 @@ function LoadingScreen() {
         playsInline
         className="absolute inset-0 h-full w-full object-cover"
       />
-      <div className="absolute inset-0 bg-black/35 flex flex-col justify-end p-8 md:p-12">
-        <div className="flex items-center gap-3">
-          <span className="flex size-4 items-center justify-center">
-            <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-white opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
-          </span>
-          <span className="text-sm font-bold uppercase tracking-widest text-white drop-shadow">
-            Loading KP Farm Ventures...
-          </span>
-        </div>
-      </div>
     </div>
   );
 }

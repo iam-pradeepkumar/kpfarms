@@ -233,7 +233,7 @@ function Index() {
               </a>
             </div>
 
-            <div className="mt-12 grid grid-cols-2 sm:flex sm:flex-wrap gap-x-8 gap-y-6 text-sm max-w-2xl bg-white/30 p-4 sm:p-5 rounded-3xl backdrop-blur-md border border-white/20">
+            <div className="mt-12 grid grid-cols-2 sm:flex sm:flex-wrap gap-x-8 gap-y-6 text-sm max-w-2xl">
               <div>
                 <div className="font-display text-xl sm:text-2xl font-extrabold text-kp-green">
                   {consultCount.toLocaleString("en-IN")}+

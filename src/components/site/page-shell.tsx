@@ -5,7 +5,7 @@ import { SiteNav } from "./nav";
 import { SiteFooter } from "./footer";
 import { FloatingActions } from "./floating-actions";
 import { FeatherBackdrop } from "./decor";
-import { MeetingReminder } from "./meeting-reminder";
+
 
 function BackButton() {
   const router = useRouter();
@@ -42,7 +42,6 @@ export function PageShell({ children }: { children: ReactNode }) {
       <main className="relative z-10">{children}</main>
       <SiteFooter />
       <FloatingActions />
-      <MeetingReminder />
     </div>
   );
 }
