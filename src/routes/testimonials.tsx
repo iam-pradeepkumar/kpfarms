@@ -17,6 +17,7 @@ import {
   resolveTestimonialMediaUrl,
   type TestimonialRow,
 } from "@/lib/submissions";
+import { getPublicTestimonials, resolveTestimonialMedia } from "@/lib/settings.functions";
 
 export const Route = createFileRoute("/testimonials")({
   head: () => ({
@@ -73,29 +74,21 @@ function TestimonialsPage() {
 
   const load = async () => {
     setLoading(true);
-    let { data } = await supabase
-      .from("testimonials")
-      .select("*")
-      .eq("status", "approved")
-      .order("featured", { ascending: false })
-      .order("created_at", { ascending: false });
+    // Use server function to bypass RLS for all visitors
+    let data = await getPublicTestimonials({ textOnly: false }).catch(() => []);
 
     if (!data || data.length === 0) {
-      await supabase.from("testimonials").insert(INITIAL_GOOGLE_REVIEWS);
-      const res = await supabase
-        .from("testimonials")
-        .select("*")
-        .eq("status", "approved")
-        .order("featured", { ascending: false })
-        .order("created_at", { ascending: false });
-      data = res.data;
+      await supabase.from("testimonials").insert(INITIAL_GOOGLE_REVIEWS).catch(() => {});
+      data = await getPublicTestimonials({ textOnly: false }).catch(() => []);
     }
 
-    const list = (data as TestimonialRow[] | null) ?? [];
+    const list = (data as TestimonialRow[]) ?? [];
     const resolved = await Promise.all(
       list.map(async (r) => ({
         ...r,
-        resolvedMedia: await resolveTestimonialMediaUrl(r.media_url),
+        resolvedMedia: r.media_url
+          ? await resolveTestimonialMedia(r.media_url).catch(() => null)
+          : null,
       })),
     );
     setRows(resolved);

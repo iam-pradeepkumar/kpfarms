@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { PageShell, PageHero } from "@/components/site/page-shell";
-import { listBlogPosts, resolveBlogMediaUrl, type BlogPost } from "@/lib/blog";
+import { resolveBlogMediaUrl, type BlogPost } from "@/lib/blog";
+import { getPublicBlogPosts } from "@/lib/settings.functions";
 import { Loader2, X } from "lucide-react";
 
 export const Route = createFileRoute("/blog")({
@@ -31,8 +32,11 @@ function Blog() {
   const [open, setOpen] = useState<BlogPost | null>(null);
 
   useEffect(() => {
-    listBlogPosts().then((p) => {
-      setPosts(p);
+    getPublicBlogPosts({}).then((p) => {
+      setPosts(p as BlogPost[]);
+      setLoading(false);
+      window.dispatchEvent(new Event("page-data-loaded"));
+    }).catch(() => {
       setLoading(false);
       window.dispatchEvent(new Event("page-data-loaded"));
     });

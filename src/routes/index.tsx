@@ -6,13 +6,18 @@ import { Chick, Hen, Feather } from "@/components/site/decor";
 import { FounderCarousel } from "@/components/site/founder-carousel";
 import { MessageCard } from "@/components/site/message-card";
 import { PageShell } from "@/components/site/page-shell";
-import { listBlogPosts, type BlogPost } from "@/lib/blog";
+import { type BlogPost } from "@/lib/blog";
 import { PostCard, PostModal } from "@/routes/blog";
 
-import { supabase } from "@/integrations/supabase/client";
 import type { TestimonialRow } from "@/lib/submissions";
-import { getHomeVideoUrls, isVideoMediaUrl, type HomeVideoKey } from "@/lib/home-videos";
-import { getPublicSiteSettings } from "@/lib/settings.functions";
+import { isVideoMediaUrl, type HomeVideoKey } from "@/lib/home-videos";
+import {
+  getPublicSiteSettings,
+  getPublicTestimonials,
+  getPublicBlogPosts,
+  getPublicHomeVideos,
+  getPublicHomeCounts,
+} from "@/lib/settings.functions";
 
 import founderFamily from "@/assets/founder-family.jpg.asset.json";
 import founderFormal from "@/assets/founder-formal.png.asset.json";
@@ -80,43 +85,40 @@ function Index() {
   useEffect(() => {
     (async () => {
       try {
-        const results = await Promise.all([
-          listBlogPosts().then((p) => setPosts(p.slice(0, 3))).catch(() => {}),
-          getHomeVideoUrls().then(setVideos).catch(() => {}),
-          supabase.rpc("trained_farmers_count" as never).then(({ data, error }) => {
-            const n = Number(data);
-            if (!error && Number.isFinite(n) && n > 0) setTrainedCount(n);
-          }).catch(() => {}),
-          supabase.from("consultation_bookings" as never).select("id", { count: "exact", head: true }).catch(() => null),
-          supabase.from("farm_visit_bookings" as never).select("id", { count: "exact", head: true }).catch(() => null),
-          supabase.from("training_registrations" as never).select("id", { count: "exact", head: true }).catch(() => null),
-          supabase.from("testimonials")
-            .select("id, name, place, text, rating")
-            .eq("status", "approved")
-            .not("text", "is", null)
-            .order("featured", { ascending: false })
-            .order("created_at", { ascending: false })
-            .limit(12)
-            .then(({ data }) => {
-              const rows = (data as any) ?? [];
-              setTestimonials(rows.length ? rows : FALLBACK_TESTIMONIALS);
-            }).catch(() => {}),
+        // Use server functions for ALL data to bypass RLS
+        const [blogPosts, videoUrls, testimonialRows, statSettings, counts] = await Promise.all([
+          getPublicBlogPosts({ limit: 3 }).catch(() => []),
+          getPublicHomeVideos([
+            "home_video_digital", "home_video_poultry", "home_video_meeting",
+            "home_video_farm_visit", "home_video_training",
+            "service_video_advice", "service_video_farm_visit",
+            "service_video_shed_plan", "service_video_shed_quote",
+          ]).catch(() => ({})),
+          getPublicTestimonials({ limit: 12, textOnly: true }).catch(() => []),
           getPublicSiteSettings([
-            "stat_consultations",
-            "stat_farm_visits",
-            "stat_training",
-            "stat_chicken_production",
-            "stat_batch_counts"
-          ]).then((data) => {
-            data?.forEach((row) => {
-              if (row.key === "stat_consultations" && row.value) setConsultCount(Number(row.value) || 507);
-              if (row.key === "stat_farm_visits" && row.value) setVisitCount(Number(row.value) || 203);
-              if (row.key === "stat_training" && row.value) setTrainingCount(Number(row.value) || 150);
-              if (row.key === "stat_chicken_production" && row.value) setChickenProdCount(Number(row.value) || 10000);
-              if (row.key === "stat_batch_counts" && row.value) setBatchRunCount(Number(row.value) || 50);
-            });
-          }).catch(() => {})
+            "stat_consultations", "stat_farm_visits", "stat_training",
+            "stat_chicken_production", "stat_batch_counts",
+          ]).catch(() => []),
+          getPublicHomeCounts().catch(() => ({
+            consultations: 0, farmVisits: 0, trainingRegs: 0, trainedFarmers: 0,
+          })),
         ]);
+
+        setPosts(blogPosts.slice(0, 3));
+        setVideos(videoUrls as Partial<Record<HomeVideoKey, string>>);
+
+        const tRows = (testimonialRows as any) ?? [];
+        setTestimonials(tRows.length ? tRows : FALLBACK_TESTIMONIALS);
+
+        statSettings?.forEach((row: any) => {
+          if (row.key === "stat_consultations" && row.value) setConsultCount(Number(row.value) || 507);
+          if (row.key === "stat_farm_visits" && row.value) setVisitCount(Number(row.value) || 203);
+          if (row.key === "stat_training" && row.value) setTrainingCount(Number(row.value) || 150);
+          if (row.key === "stat_chicken_production" && row.value) setChickenProdCount(Number(row.value) || 10000);
+          if (row.key === "stat_batch_counts" && row.value) setBatchRunCount(Number(row.value) || 50);
+        });
+
+        if (counts.trainedFarmers > 0) setTrainedCount(counts.trainedFarmers);
 
         const animate = (base: number, extra: number, setter: (n: number) => void) => {
           const target = base + (extra || 0);
@@ -128,13 +130,10 @@ function Index() {
             if (current >= target) clearInterval(id);
           }, 40);
         };
-        
-        const c1 = results[3];
-        const c2 = results[4];
-        const c3 = results[5];
-        animate(500, (c1 as any)?.count ?? 0, setConsultCount);
-        animate(200, (c2 as any)?.count ?? 0, setVisitCount);
-        animate(150, (c3 as any)?.count ?? 0, setTrainingCount);
+
+        animate(500, counts.consultations ?? 0, setConsultCount);
+        animate(200, counts.farmVisits ?? 0, setVisitCount);
+        animate(150, counts.trainingRegs ?? 0, setTrainingCount);
       } catch (err) {
         console.error(err);
       } finally {
