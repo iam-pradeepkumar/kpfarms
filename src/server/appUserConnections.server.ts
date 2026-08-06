@@ -1,4 +1,5 @@
 /* Server-only storage for the Google connection tokens using site_settings. */
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { encryptConnectionKey, decryptConnectionKey } from "@/server/connectionKeyCrypto";
 
@@ -9,10 +10,12 @@ export async function saveConnectionKeyForUser(
   _userId: string,
   _connectorId: string,
   connectionAPIKey: string,
+  client?: SupabaseClient,
 ) {
   const ciphertext = encryptConnectionKey(connectionAPIKey);
+  const db = client || supabase;
 
-  const { error } = await supabase
+  const { error } = await db
     .from("site_settings")
     .upsert({ key: SITE_SETTINGS_FALLBACK_KEY, value: ciphertext }, { onConflict: "key" });
 
@@ -25,9 +28,11 @@ export async function saveConnectionKeyForUser(
 export async function getConnectionKeyForUser(
   _userId: string,
   _connectorId: string,
+  client?: SupabaseClient,
 ): Promise<string | null> {
   try {
-    const { data } = await supabase
+    const db = client || supabase;
+    const { data } = await db
       .from("site_settings")
       .select("value")
       .eq("key", SITE_SETTINGS_FALLBACK_KEY)
@@ -41,9 +46,14 @@ export async function getConnectionKeyForUser(
   }
 }
 
-export async function deleteConnectionKeyForUser(_userId: string, _connectorId: string) {
+export async function deleteConnectionKeyForUser(
+  _userId: string,
+  _connectorId: string,
+  client?: SupabaseClient,
+) {
   try {
-    await supabase.from("site_settings").delete().eq("key", SITE_SETTINGS_FALLBACK_KEY);
+    const db = client || supabase;
+    await db.from("site_settings").delete().eq("key", SITE_SETTINGS_FALLBACK_KEY);
   } catch (e) {
     console.error("deleteConnectionKeyForUser error:", e);
   }

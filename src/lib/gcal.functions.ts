@@ -61,7 +61,7 @@ export const completeGoogleCalendarConnect = createServerFn({ method: "POST" })
       if (!request) throw new Error("Missing origin.");
       origin = new URL(request.url).origin;
     }
-    await completeGoogleAuth(context.userId, data.code, origin);
+    await completeGoogleAuth(context.userId, data.code, origin, context.supabase);
     return { ok: true };
   });
 
@@ -70,11 +70,11 @@ export const getMyGoogleCalendar = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdminUser(context);
-    const connectionKey = await getConnectionKeyForUser(context.userId, GCAL_CONNECTOR_ID);
+    const connectionKey = await getConnectionKeyForUser(context.userId, GCAL_CONNECTOR_ID, context.supabase);
     if (!connectionKey) {
       return { connected: false, account: "", calendars: [], error: null as string | null };
     }
-    const { calendars, error } = await adminCalendars(context.userId);
+    const { calendars, error } = await adminCalendars(context.userId, context.supabase);
     return {
       connected: !error,
       account: calendars.find((c) => c.primary)?.id ?? "",
@@ -87,6 +87,6 @@ export const disconnectGoogleCalendar = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireAdminUser(context);
-    await revokeGoogle(context.userId);
+    await revokeGoogle(context.userId, context.supabase);
     return { ok: true };
   });

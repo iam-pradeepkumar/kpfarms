@@ -43,6 +43,7 @@ export async function completeGoogleAuth(
   userId: string,
   code: string,
   origin: string,
+  client?: SupabaseClient,
 ) {
   const redirectUri = oauthRedirectUri(origin);
   const tokens = await exchangeGoogleCode(code, redirectUri);
@@ -51,13 +52,17 @@ export async function completeGoogleAuth(
     userId,
     GCAL_CONNECTOR_ID,
     JSON.stringify(tokens),
+    client,
   );
   return tokens;
 }
 
 /** Load tokens for the admin from the database. */
-async function loadTokens(userId: string): Promise<GoogleTokens | null> {
-  const stored = await getConnectionKeyForUser(userId, GCAL_CONNECTOR_ID);
+async function loadTokens(
+  userId: string,
+  client?: SupabaseClient,
+): Promise<GoogleTokens | null> {
+  const stored = await getConnectionKeyForUser(userId, GCAL_CONNECTOR_ID, client);
   if (!stored) return null;
   try {
     return JSON.parse(stored) as GoogleTokens;
@@ -67,17 +72,22 @@ async function loadTokens(userId: string): Promise<GoogleTokens | null> {
 }
 
 /** Update tokens in the database (e.g. after a refresh). */
-async function persistTokens(userId: string, tokens: GoogleTokens) {
+async function persistTokens(
+  userId: string,
+  tokens: GoogleTokens,
+  client?: SupabaseClient,
+) {
   await saveConnectionKeyForUser(
     userId,
     GCAL_CONNECTOR_ID,
     JSON.stringify(tokens),
+    client,
   );
 }
 
 /** Writable calendars of the connected Google account. */
-export async function adminCalendars(userId: string) {
-  const tokens = await loadTokens(userId);
+export async function adminCalendars(userId: string, client?: SupabaseClient) {
+  const tokens = await loadTokens(userId, client);
   if (!tokens) {
     return {
       calendars: [] as { id: string; summary: string; primary: boolean }[],
@@ -91,7 +101,7 @@ export async function adminCalendars(userId: string) {
     );
     // Persist refreshed tokens if they changed
     if (updatedTokens.access_token !== tokens.access_token) {
-      await persistTokens(userId, updatedTokens);
+      await persistTokens(userId, updatedTokens, client);
     }
     if (!response.ok) {
       const text = await response.text();
@@ -124,8 +134,9 @@ export async function createMeetEvent(
   userId: string,
   calendarId: string,
   body: unknown,
+  client?: SupabaseClient,
 ) {
-  const tokens = await loadTokens(userId);
+  const tokens = await loadTokens(userId, client);
   if (!tokens) throw new Error("No Google account connected.");
 
   const { response, updatedTokens } = await callGoogleCalendarAPI(
@@ -139,7 +150,7 @@ export async function createMeetEvent(
   );
 
   if (updatedTokens.access_token !== tokens.access_token) {
-    await persistTokens(userId, updatedTokens);
+    await persistTokens(userId, updatedTokens, client);
   }
 
   if (!response.ok) {
@@ -157,9 +168,9 @@ export async function createMeetEvent(
 }
 
 /** Disconnect Google — just remove stored tokens. */
-export async function revokeGoogle(userId: string) {
+export async function revokeGoogle(userId: string, client?: SupabaseClient) {
   // Optionally revoke the token at Google
-  const tokens = await loadTokens(userId);
+  const tokens = await loadTokens(userId, client);
   if (tokens) {
     try {
       await fetch(
@@ -170,5 +181,5 @@ export async function revokeGoogle(userId: string) {
       /* best effort */
     }
   }
-  await deleteConnectionKeyForUser(userId, GCAL_CONNECTOR_ID);
+  await deleteConnectionKeyForUser(userId, GCAL_CONNECTOR_ID, client);
 }
